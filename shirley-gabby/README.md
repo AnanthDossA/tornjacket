@@ -7,7 +7,8 @@ Separate from the Torn Jacket engine (which is untouched). Fictional cartoon ser
 - `acting.py` - layer 2a: pose-to-pose acting (key poses, holds, anticipation/overshoot/settle curve, animation on twos, exaggeration, per-character personality), phrase-by-phrase TTS with comic pauses.
 - `creature.py` - layer 2b: general creature parts (tentacles with curl/wave/follow-through, creature faces, crown, PoseTrack) + the Sock King.
 - `chars.py` - Shirley and Gabby character specs.
-- `sets.py`, scene scripts (`scene_ep.py`, `king_scene.py`, `compare.py`) - to be added.
+- `sets.py` - laundromat + Sock Dimension sets (parallax layers), dryer glow, portal transition.
+- `scene_ep.py` (laundromat -> portal -> Sock Dimension), `king_scene.py` (Sock King), `compare.py` (smooth vs pose-to-pose), `motion_test.py`, `scene_test.py` - test scenes. Run with `--preview` for a contact sheet.
 
 ## Requirements
 `pip install skia-python numpy scipy pillow` + ffmpeg. Voices reuse Torn Jacket's `voices.py` (Kokoro) and fonts from `~/tj`.
