@@ -201,9 +201,11 @@ SH_HAIR = {"base": (sh_back_base, sh_front_base), "angled": (sh_back_angled, sh_
 SH_STYLE = "base"
 
 
-def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5, hair=None, features_only=False):
-    """features_only=True draws just the face features (for 3D face decals)"""
+def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5, hair=None, features_only=False, layers=None):
+    """features_only=True draws just the face features (for 3D face decals); layers limits them to
+    a subset of {"eyes", "brows", "nose", "blush", "mouth"}"""
     c, e = SH, SH_EXPR[expr]
+    L = lambda k: layers is None or k in layers
     back, front = SH_HAIR[hair or SH_STYLE]
     if features_only:
         back = front = (lambda *a: None)
@@ -213,14 +215,19 @@ def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5, hair=None, features_only=F
         for sx in (-1, 1):  # small ears just peeking out of the bob
             cel(S, ell(84 * sx, 0, 11, 19), *c["skin"], -3 * sx, -3, lw)
         cel(S, FACE_SH, *c["skin"], -12, -10, lw)
-    S.add(f'<path d="{ell(-46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/><path d="{ell(46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/>')
+    if L("blush"):
+        S.add(f'<path d="{ell(-46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/><path d="{ell(46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/>')
     front(S, c, lw)
-    for sx in (-1, 1):
+    for sx in (-1, 1) if L("eyes") else ():
         eye(S, c, 37 * sx, -8, 30, 22, look=e["look"], lid=e.get("lid", 0), squint=e.get("squint", 0), lashes=True, wide=e.get("wide", False))
-    brows(S, c, e["raise_"], e["ang"], 6, -46, 62)
-    nose(S, c, 0.85, 4)
-    m = e["mouth"]
-    if m == "o":
+    if L("brows"):
+        brows(S, c, e["raise_"], e["ang"], 6, -46, 62)
+    if L("nose"):
+        nose(S, c, 0.85, 4)
+    m = e["mouth"] if L("mouth") else None
+    if m is None:
+        pass
+    elif m == "o":
         cel(S, ell(0, 74, 11, 14), "#3b1519", "#3b1519", 0, 0, 3.2)
     elif m == "flat":
         line(S, "M-17,72 Q0,74 17,70", 4)
@@ -229,7 +236,8 @@ def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5, hair=None, features_only=F
         cel(S, f"M-22,68 Q0,{70 + sm + 9} 22,68 Q0,{70 + sm} -22,68 Z", c["lips"], c["lips"], 0, 0, 3)
         line(S, f"M-22,68 Q0,{64 - sm} 22,68", 3)
         line(S, f"M-26,65 q-3,3 0,7 M26,65 q3,3 0,7", 2, INK, 0.5)
-    line(S, "M-10,96 Q0,100 10,96", 2, INK, 0.35)  # small chin
+    if L("nose"):
+        line(S, "M-10,96 Q0,100 10,96", 2, INK, 0.35)  # small chin
     g_close(S)
 
 
@@ -305,25 +313,30 @@ GB_HAIR = {"base": gb_hair_base, "curly": gb_hair_curly, "quiff": gb_hair_quiff,
 GB_STYLE = "base"
 
 
-def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5, hair=None, features_only=False):
+def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5, hair=None, features_only=False, layers=None):
     c, e = GB, GB_EXPR[expr]
+    L = lambda k: layers is None or k in layers
     g_open(S, x, y, s)
     if not features_only:
         for sx in (-1, 1):
             cel(S, ell(89 * sx, -6, 19, 29), *c["skin"], -6 * sx, -4, lw)
             line(S, f"M{84 * sx},-18 Q{97 * sx},-6 {86 * sx},12", 3, INK, 0.7)
         cel(S, FACE_GB, *c["skin"], -14, -10, lw)
-    if e["mouth"] == "grin":  # cheeks bunch up when he smiles
+    if e["mouth"] == "grin" and L("mouth"):  # cheeks bunch up when he smiles
         line(S, "M-56,40 q-5,6 -2,12 M56,40 q5,6 2,12", 2.4, INK, 0.5)  # smile dimples
     if not features_only:
         GB_HAIR[hair or GB_STYLE](S, c, lw)
-    for sx in (-1, 1):
+    for sx in (-1, 1) if L("eyes") else ():
         eye(S, c, 36 * sx, -12, 29, 22, look=e.get("look", (0, 0)), lid=e.get("lid", 0), squint=e.get("squint", 0),
             spiral=e.get("spiral", False), wide=e.get("wide", False))
-    brows(S, c, e["raise_"], e["ang"], 9, -54, 62)
-    nose(S, c, 1.25, 4)
-    m = e["mouth"]
-    if m == "grin":  # wide smile showing the upper teeth
+    if L("brows"):
+        brows(S, c, e["raise_"], e["ang"], 9, -54, 62)
+    if L("nose"):
+        nose(S, c, 1.25, 4)
+    m = e["mouth"] if L("mouth") else None
+    if m is None:
+        pass
+    elif m == "grin":  # wide smile showing the upper teeth
         d = "M-43,52 Q0,61 43,52 Q36,86 0,88 Q-36,86 -43,52 Z"
         cid = S.uid(); S.defs.append(f'<clipPath id="{cid}"><path d="{d}"/></clipPath>')
         S.add(f'<path d="{d}" fill="{c["mouth"]}"/><g clip-path="url(#{cid})"><rect x="-60" y="48" width="120" height="22" fill="{W_}"/>'

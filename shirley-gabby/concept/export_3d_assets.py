@@ -51,11 +51,11 @@ def profile(d, step=2.0):
     return rows
 
 
-def decal(who, expr, path_png):
+def decal(who, expr, path_png, layers=None):
     VB = (-120, -190, 240, 340)  # x, y, w, h in sheet units
     S = SVG(240 * 4, 340 * 4)
     S.add(f'<g transform="scale(4) translate({-VB[0]},{-VB[1]})">')
-    (T.shirley_head if who == "shirley" else T.gabby_head)(S, 0, 0, 1.0, expr, features_only=True)
+    (T.shirley_head if who == "shirley" else T.gabby_head)(S, 0, 0, 1.0, expr, features_only=True, layers=layers)
     S.add("</g>")
     svg = path_png.replace(".png", ".svg")
     open(svg, "w").write(S.out())
@@ -72,6 +72,10 @@ if __name__ == "__main__":
             svg, _ = decal(who, e, png)
             jobs.append((svg, png))
             data["decals"].setdefault(who, []).append(e)
+            png = os.path.join(OUT, "decals", f"{who}_mouth_{e}.png")  # mouth-only layer (rigged heads)
+            jobs.append((decal(who, e, png, {"mouth"})[0], png))
+        png = os.path.join(OUT, "decals", f"{who}_static.png")  # nose + blush (+chin) layer
+        jobs.append((decal(who, list(exprs)[0], png, {"nose", "blush"})[0], png))
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         b = p.chromium.launch()
