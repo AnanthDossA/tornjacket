@@ -16,7 +16,7 @@ SH = dict(skin=("#8c5b3d", "#5f3c27"), palm=("#ad7653", "#7d5136"), hair=("#1712
           yoke=("#c8323e", "#8e1f2a"), pants=("#3e7a46", "#275230"), gold=("#ecc65e", "#b48c2c"), silver=("#d9dde3", "#9aa1ab"),
           lips="#6e3a2e", sandal=("#c9893c", "#8f5e24"), iris="#3e2416",
           kurta=("#2f8f8c", "#1e6462"), buti="#f4efe2", jeans=("#4d6ea6", "#344d7d"), shoe=("#f4f3ee", "#c6c4bb"))
-GB = dict(skin=("#93613f", "#66422a"), palm=("#b07a56", "#805338"), hair=("#17121a", "#0b080d"), shine="#5d6b8a",
+GB = dict(skin=("#a46f4b", "#774d31"), palm=("#c38f69", "#926242"), hair=("#17121a", "#0b080d"), shine="#5d6b8a",
           shirt=("#24345e", "#151f3c"), leaf="#dfe7f2", shorts=("#9fb1c6", "#6f8299"), tape="#f4f4ee", band="#e9d27a",
           shoe=("#f2f1ea", "#c3c1b8"), sole="#d84a3c", iris="#3e2416", mouth="#3b1519", tongue="#d0625b")
 
@@ -29,8 +29,9 @@ def skin_hands(c):
 # Shirley: longer oval face tapering to a small soft chin. Gabby: rounder, full cheeks, big forehead, prominent ears.
 FACE_SH = ("M-80,-98 C-86,-162 86,-162 80,-98 C90,-46 88,8 76,46 C62,88 32,118 0,122 "
            "C-32,118 -62,88 -76,46 C-88,8 -90,-46 -80,-98 Z")
-FACE_GB = ("M-81,-92 C-88,-162 88,-162 81,-92 C95,-42 99,10 90,48 C79,86 45,108 0,110 "
-           "C-45,108 -79,86 -90,48 C-99,10 -95,-42 -81,-92 Z")
+# round like the reference but lean (fitness freak): widest at the eyes, clean taper to the chin, no puffy cheeks
+FACE_GB = ("M-84,-96 C-91,-164 91,-164 84,-96 C93,-58 93,-8 83,32 C71,78 40,106 0,108 "
+           "C-40,106 -71,78 -83,32 C-93,-8 -93,-58 -84,-96 Z")
 FACE = FACE_GB
 
 
@@ -158,11 +159,11 @@ def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5):
     c, e = GB, GB_EXPR[expr]
     g_open(S, x, y, s)
     for sx in (-1, 1):
-        cel(S, ell(90 * sx, 4, 20, 30), *c["skin"], -6 * sx, -4, lw)
-        line(S, f"M{85 * sx},-8 Q{98 * sx},4 {87 * sx},22", 3, INK, 0.7)
+        cel(S, ell(89 * sx, -6, 19, 29), *c["skin"], -6 * sx, -4, lw)
+        line(S, f"M{84 * sx},-18 Q{97 * sx},-6 {86 * sx},12", 3, INK, 0.7)
     cel(S, FACE_GB, *c["skin"], -14, -10, lw)
     if e["mouth"] == "grin":  # cheeks bunch up when he smiles
-        line(S, "M-62,30 Q-72,46 -60,60 M62,30 Q72,46 60,60", 2.6, INK, 0.45)
+        line(S, "M-56,40 q-5,6 -2,12 M56,40 q5,6 2,12", 2.4, INK, 0.5)  # smile dimples
     hair = ("M-86,-74 C-99,-156 -36,-196 9,-188 C68,-182 103,-148 86,-74 "
             "L76,-84 Q65,-104 52,-88 Q40,-110 25,-92 Q11,-114 -5,-94 Q-22,-112 -36,-92 Q-50,-108 -65,-88 Q-77,-102 -86,-74 Z")
     cel(S, hair, *c["hair"], -8, -6, lw)
@@ -177,13 +178,13 @@ def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5):
     nose(S, c, 1.25, 4)
     m = e["mouth"]
     if m == "grin":  # wide smile showing the upper teeth
-        d = "M-48,54 Q0,64 48,54 Q40,94 0,96 Q-40,94 -48,54 Z"
+        d = "M-43,52 Q0,61 43,52 Q36,86 0,88 Q-36,86 -43,52 Z"
         cid = S.uid(); S.defs.append(f'<clipPath id="{cid}"><path d="{d}"/></clipPath>')
         S.add(f'<path d="{d}" fill="{c["mouth"]}"/><g clip-path="url(#{cid})"><rect x="-60" y="48" width="120" height="22" fill="{W_}"/>'
               + "".join(f'<line x1="{x0}" y1="54" x2="{x0}" y2="70" stroke="{INK}" stroke-width="1.4" opacity="0.35"/>' for x0 in (-30, -10, 10, 30))
-              + f'<path d="{ell(0, 100, 24, 15)}" fill="{c["tongue"]}"/></g>')
+              + f'<path d="{ell(0, 92, 20, 13)}" fill="{c["tongue"]}"/></g>')
         S.add(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="4.5" stroke-linejoin="round"/>')
-        line(S, "M-54,48 Q-58,56 -50,60 M54,48 Q58,56 50,60", 3)
+        line(S, "M-48,46 Q-52,54 -45,58 M48,46 Q52,54 45,58", 3)
     elif m == "tongue":
         line(S, "M-28,70 Q0,76 28,68", 5)
         cel(S, "M6,70 Q8,90 20,88 Q28,82 24,69 Z", c["tongue"], "#a84a44", -2, -2, 3)
