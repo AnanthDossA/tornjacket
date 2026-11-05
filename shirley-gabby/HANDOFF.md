@@ -8,9 +8,9 @@ Written at the end of the first build session (2026-11-04) so a new conversation
 - **Formula:** Gabby jumps into trouble, Shirley gets dragged along complaining, the world is absurd, and it ends on a sting.
 - **Completely separate from Torn Jacket.** The Torn Jacket news-Shorts pipeline (scheduled task + studio artifact, engine.py) must stay untouched. This engine reuses Torn Jacket's `voices.py` (Kokoro TTS) and fonts only by reading them.
 
-## 2. Characters (adults, never kids)
+## 2. Characters
 - **Shirley (elder sister, ~29):** sharp, deadpan, permanently tired, secretly the bravest. Tall head, black hair in a bun with a pencil stuck through it, round glasses, gold earrings, mustard blouse with collar and buttons, plum trousers, half-lidded eyes. Voice `bf_emma` (speed ~0.92). Moves minimally and slowly; barely gestures; rolls her eyes.
-- **Gabby (younger brother, ~22):** loud, optimistic, gullible, causes every adventure, occasionally accidentally right. Round head, stubble, teal beanie with a pom-pom, red hoodie with strings and a pocket, jeans, white sneakers, big eyes. Voice `am_puck` (speed ~1.05–1.1). Fast, bouncy, exaggerated, overacts.
+- **Gabby (younger brother, ~16, teen; changed 2026-11-05 from ~22 at the owner's request):** loud, optimistic, gullible, causes every adventure, occasionally accidentally right. **Indian**, lanky and skinny: slim oval face, big brown eyes, thick brows, messy wavy black hair escaping a teal ribbed beanie with pom-pom and a cutting-chai glass pin, faint lip fuzz (no beard), a couple of spots. Baggy red hoodie (hood, strings, kangaroo pocket, faded winged-sock print), black thread wristband, skinny jeans, big white sneakers. Approved look lives in `concept/gabby_sheet.png` (v2); the 3D model in `blender/sg3d.py` still shows the older chubby adult version and must be rebuilt to match. Voice `am_puck` (speed ~1.05–1.1). Fast, bouncy, exaggerated, overacts.
 - **Sock King:** first creature. A giant pink-and-gold-striped sock with bendy sock-arms (tentacles), a ribbed cuff and a crown. Deep echoey voice (`am_onyx`, pitched down). Poses: regal, loom, point, swoon, flex. Sits on a royal-blue throne in the Sock Dimension.
 - Specs live in `chars.py`.
 
