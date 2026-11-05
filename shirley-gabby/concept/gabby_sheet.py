@@ -10,7 +10,9 @@ P = dict(  # palette: (lit, shadow)
     beanie=("#269696", "#1b7070"), cuff=("#1e8080", "#155c5c"), pom=("#2aa4a4", "#1b7474"),
     hoodie=("#de5246", "#a93a34"), hood=("#b8423b", "#8c2f2b"), jeans=("#3e5488", "#2c3c66"), jcuff="#5a70a6",
     shoe=("#f2f1ea", "#c9c8bf"), sole="#d9d7cd", lace="#d8473c", white="#fbfaf4", iris="#5b3820",
-    mouth="#3b1519", tongue="#d0625b", chai="#c98a3c", glass="#e8eef0", band="#141012", watch="#2b2b30")
+    mouth="#3b1519", tongue="#d0625b", chai="#c98a3c", glass="#e8eef0", band="#141012", watch="#2b2b30",
+    palm=("#bb8360", "#8e5a3e"), nail="#d9a98c", kurta=("#f1e8d0", "#cfc2a2"), print_=("#8f2d2d", "#e2a83a"),
+    kalava=("#d23a2a", "#f2c230"), shine="#60708f")
 
 
 class SVG:
@@ -184,7 +186,9 @@ def head(S, x, y, s=1.0, expr="grin", lw=4, sheet_pin=True):
                  P["hair"][0], lw=2)
     fill(S, "M-62,-74 C-64,-48 -44,-40 -40,-56 C-36,-38 -14,-40 -12,-58 C-6,-40 16,-42 16,-60 "
             "C22,-46 40,-48 40,-74 Z", P["hair"][0], lw=2.5)  # forehead curls
-    line(S, "M-30,-66 q6,8 2,14 M4,-66 q6,8 2,14", 2, "#3a2a2e", 0.8)
+    for d in ("M-54,-66 q6,-7 14,-5", "M-30,-60 q6,-6 12,-3", "M-6,-62 q6,-6 12,-3", "M20,-64 q6,-5 12,-2",
+              "M-102,-84 q6,-4 12,-2", "M96,-84 q6,-4 12,-2", "M84,-62 q4,8 2,16", "M-90,-62 q-4,8 -2,16"):
+        line(S, d, 2.4, P["shine"], 0.85)
     # beanie: dome (ribbed), cuff, pom-pom, chai-glass pin
     dome = "M-110,-76 C-118,-172 -56,-210 0,-210 C56,-210 118,-172 110,-76 Z"
     cel(S, dome, P["beanie"][0], P["beanie"][1], -18, -10, lw)
@@ -247,6 +251,14 @@ def body(S, x, y, s=1.0, lw=4):
         for k in range(3):
             line(S, f"M{(-98 + 13 * k) * sx},{730 - 2 * k} l{10 * sx},{-8}", 3, P["lace"])
         line(S, f"M{-130 * sx},756 q{28 * sx},-10 {64 * sx},-4", 2, op=0.4)
+    # cream kurta peeking out under the hoodie, block-print border + side slits
+    cel(S, "M-120,420 L120,420 L124,504 Q0,512 -124,504 Z", P["kurta"][0], P["kurta"][1], -10, -4, lw)
+    fill(S, "M-123,486 Q0,494 123,486 L124,504 Q0,512 -124,504 Z", P["print_"][0], lw=2.5)
+    for i in range(-5, 6):
+        bx = i * 22
+        fill(S, f"M{bx - 4},{500} C{bx - 9},{494} {bx - 4},{488} {bx + 1},{490} C{bx + 6},{492} {bx + 4},{499} {bx - 4},{500} Z", P["print_"][1])
+    for sx in (-1, 1):
+        line(S, f"M{110 * sx},470 L{112 * sx},506", 3)
     # baggy hoodie on a skinny frame: narrow shoulders, hangs long
     torso = ("M-60,130 C-98,134 -122,150 -128,190 C-138,264 -136,350 -132,420 L132,420 "
              "C136,350 138,264 128,190 C122,150 98,134 60,130 Z")
@@ -263,6 +275,11 @@ def body(S, x, y, s=1.0, lw=4):
         line(S, f"M{20 * sx},152 C{22 * sx},196 {16 * sx},228 {22 * sx},262", 7, INK)
         line(S, f"M{20 * sx},152 C{22 * sx},196 {16 * sx},228 {22 * sx},262", 3.5, P["white"])
         fill(S, f"M{16 * sx},260 L{28 * sx},260 L{27 * sx},278 L{17 * sx},278 Z", "#c9c8bf", lw=2.5)
+    for wire in ("M-42,150 C-50,200 -52,236 -54,262", "M42,150 C52,196 58,228 60,250", "M-54,264 C-40,290 -6,296 8,308"):
+        line(S, wire, 3.2, "#2b2b30")
+    for bx, by in ((-54, 266), (60, 254)):
+        fill(S, ell(bx, by, 7, 9), "#2b2b30", lw=2)
+        S.add(f'<circle cx="{bx - 2}" cy="{by - 3}" r="2" fill="#8890a0"/>')
     for a, b, c, d in [(-96, 250, -80, 300), (96, 250, 82, 296), (-112, 336, -102, 380), (110, 340, 104, 380)]:
         line(S, f"M{a},{b} Q{(a + c) / 2 + 8},{(b + d) / 2} {c},{d}", 2.5, op=0.55)
     hose(S, [(118, 176), (140, 290), (78, 352)], 50, hd, lw)  # hand in pocket
@@ -275,20 +292,101 @@ def body(S, x, y, s=1.0, lw=4):
     hose(S, [(-118, 176), (-160, 304), (-196, 212)], 50, hd, lw)  # thumbs-up arm
     line(S, "M-140,272 q-4,16 8,26", 2.5, op=0.5)
     g_open(S, -196, 212, 0.82, -18)
-    cel(S, "M-36,-6 L36,-6 L32,18 L-32,18 Z", P["hood"][0], P["hood"][1], -4, -4, lw)
-    fill(S, "M-24,-16 L24,-16 L24,-6 L-24,-6 Z", P["skin"][0], lw=0)
-    line(S, "M-24,-12 Q0,-8 24,-12", 4, P["band"])
+    sleeve(S, 36)
+    fill(S, "M-24,-22 L24,-22 L24,6 L-24,6 Z", P["skin"][0], lw=0)
+    line(S, "M-25,-16 Q0,-12 25,-16", 4, P["band"])  # black thread
+    line(S, "M-25,-5 Q0,-1 25,-5", 6, P["kalava"][0])  # red kalava thread
+    S.add(f'<path d="M-25,-5 Q0,-1 25,-5" fill="none" stroke="{P["kalava"][1]}" stroke-width="2" stroke-dasharray="5 4"/>')
+    g_open(S, 0, -18, 1, 0)
+    hand_thumbs(S)
+    g_close(S)
+    g_close(S)
+    g_close(S)
+
+
+
+# ------------------------------------------------------------------ hands (wrist at origin, fingers point up = -y)
+def finger(S, x, y, ang, L, w, nail=False, creases=2, palm=False):
+    lit, dk = P["palm"] if palm else P["skin"]
+    g_open(S, x, y, 1, ang)
+    d = f"M{-w / 2},6 L{-w / 2},{-L + w / 2} A{w / 2},{w / 2} 0 0 1 {w / 2},{-L + w / 2} L{w / 2},6 Z"
+    cel(S, d, lit, dk, -4, -2, 3.5)
+    if nail:
+        nw, nh = w * 0.62, w * 0.62
+        fill(S, f"M{-nw / 2},{-L + w * 0.22 + nh} L{-nw / 2},{-L + w * 0.22 + nw / 2} A{nw / 2},{nw / 2} 0 0 1 {nw / 2},{-L + w * 0.22 + nw / 2} "
+                f"L{nw / 2},{-L + w * 0.22 + nh} Q0,{-L + w * 0.22 + nh + 3} {-nw / 2},{-L + w * 0.22 + nh} Z", P["nail"], lw=2)
+        line(S, f"M{-nw / 4},{-L + w * 0.22 + nw / 2} q{nw / 4},-3 {nw / 2},0", 1.4, "#ffffff", 0.7)
+    for k in range(creases):
+        yy = -L * (0.42 + 0.27 * k)
+        line(S, f"M{-w * 0.28},{yy} Q0,{yy + 3} {w * 0.28},{yy}", 2, INK, 0.55)
+    g_close(S)
+
+
+def sleeve(S, w=40):
+    cel(S, f"M{-w},6 L{w},6 L{w - 4},34 L{-w + 4},34 Z", P["hood"][0], P["hood"][1], -4, -4, 4)
+
+
+def hand_open(S, spread=1.0, palm_side=True):
+    fs = [(-23, -50, -10, 58, 20), (-7, -55, -2, 68, 21), (10, -53, 6, 63, 20), (25, -46, 15, 49, 17)]
+    for x, y, a, L, w in fs:
+        finger(S, x, y, a * spread, L, w, nail=not palm_side, palm=palm_side)
+    palm = "M-35,-56 C-40,-20 -34,14 -16,22 C4,30 28,24 35,4 C41,-20 40,-46 35,-56 Q0,-64 -35,-56 Z"
+    cel(S, palm, *(P["palm"] if palm_side else P["skin"]), -6, -6, 4)
+    if palm_side:
+        line(S, "M-28,-32 Q2,-42 31,-34", 2.2, INK, 0.45)
+        line(S, "M-32,-18 Q-6,-24 20,-10", 2.2, INK, 0.45)
+        line(S, "M-22,-40 Q-30,-4 -12,18", 2.2, INK, 0.45)
+    else:
+        for x in (-16, 0, 16):
+            line(S, f"M{x},-44 L{x * 0.7},-6", 2, INK, 0.25)
+    finger(S, -32, -8, -58 * spread, 46, 22, nail=not palm_side, creases=1, palm=palm_side)
+
+
+def hand_point(S):
+    finger(S, -16, -48, -4, 74, 21, nail=True)
+    fist = "M-31,-50 C-32,-66 26,-68 31,-50 L33,4 C31,20 -31,20 -33,4 Z"
+    cel(S, fist, *P["skin"], -6, -6, 4)
+    line(S, "M-6,-58 q8,-9 16,0 q8,-9 16,0", 3)
+    for x in (2, 18):
+        line(S, f"M{x},-50 L{x},-32", 2, INK, 0.5)
+    for x in (-12, 4, 18):
+        line(S, f"M{x},-28 L{x * 0.8},0", 2, INK, 0.25)
+    finger(S, -32, -14, 84, 44, 20, nail=True, creases=1)
+
+
+def hand_thumbs(S):
     palm = "M-26,-14 C-30,-50 -18,-70 6,-70 C28,-68 34,-44 30,-14 Z"
-    cel(S, palm, P["skin"][0], P["skin"][1], -8, -6, lw)
+    cel(S, palm, *P["skin"], -8, -6, 4)
     for k in range(4):
-        yk = -62 + 13 * k
-        cel(S, f"M-40,{yk} C-46,{yk} -46,{yk + 13} -40,{yk + 13} L-6,{yk + 13} C0,{yk + 13} 0,{yk} -6,{yk} Z",
-            P["skin"][0], P["skin"][1], -4, -3, 3.5)
-    thumb = "M-2,-66 C-8,-96 -2,-122 14,-122 C30,-122 30,-96 22,-66 Z"
-    cel(S, thumb, P["skin"][0], P["skin"][1], -6, -5, lw)
-    line(S, "M6,-114 q8,-3 14,2", 2.5, op=0.6)
+        yk = -62 + 13.5 * k
+        cel(S, f"M-42,{yk} C-49,{yk} -49,{yk + 13} -42,{yk + 13} L-4,{yk + 13} C2,{yk + 13} 2,{yk} -4,{yk} Z", *P["skin"], -4, -3, 3.5)
+        line(S, f"M-22,{yk + 3} L-22,{yk + 10}", 1.8, INK, 0.5)
+    finger(S, 10, -64, 4, 58, 24, nail=True, creases=1)
+
+
+def hand_fist(S):
+    block = "M-40,-52 C-42,-66 40,-66 40,-52 L40,4 C38,20 -38,20 -40,4 Z"
+    cel(S, block, *P["skin"], -6, -6, 4)
+    for i in range(4):
+        x0 = -40 + 20 * i
+        cel(S, f"M{x0 + 1},-30 L{x0 + 1},-54 Q{x0 + 10},-66 {x0 + 19},-54 L{x0 + 19},-30 Z", *P["skin"], -3, -3, 3)
+        line(S, f"M{x0 + 5},-42 Q{x0 + 10},-39 {x0 + 15},-42", 1.8, INK, 0.5)
+    finger(S, -38, -16, 92, 56, 21, nail=True, creases=1)
+
+
+def hand_kya(S):
+    """the 'kya?!' gesture: hand up, palm turned up, fingers loosely spread, twisting"""
+    g_open(S, 4, -12, 1, -16)
+    hand_open(S, spread=1.25, palm_side=True)
     g_close(S)
-    g_close(S)
+    line(S, "M-70,-96 Q-40,-128 -2,-120", 3, "#5a4a3c", 0.8)
+    line(S, "M-8,-128 l8,8 l-10,4", 3, "#5a4a3c", 0.8)
+    line(S, "M58,-70 Q76,-40 64,-14", 3, "#5a4a3c", 0.8)
+
+
+HAND_POSES = [("open", "open palm", lambda S: hand_open(S)), ("back", "back of hand", lambda S: hand_open(S, 0.8, False)),
+              ("point", "pointing", hand_point), ("thumbs", "thumbs up", hand_thumbs), ("fist", "fist", hand_fist),
+              ("kya", "\u201ckya?!\u201d gesture", hand_kya)]
 
 
 # ------------------------------------------------------------------ sheet
@@ -297,7 +395,7 @@ def text(S, x, y, s, size=22, weight=400, col=INK, anchor="start", family="DejaV
 
 
 def sheet(path_svg):
-    W, H = 2400, 1500
+    W, H = 2400, 1900
     S = SVG(W, H)
     S.add(f'<rect width="{W}" height="{H}" fill="#f3ead6"/>')
     for gx in range(0, W, 40):
@@ -305,11 +403,11 @@ def sheet(path_svg):
     for gy in range(0, H, 40):
         S.add(f'<line x1="0" y1="{gy}" x2="{W}" y2="{gy}" stroke="#e6dbc2" stroke-width="1"/>')
     text(S, 60, 86, "GABBY", 64, 800)
-    text(S, 64, 126, "Shirley &amp; Gabby · character sheet · concept v2 (teen)", 24, 400, "#5a4a3c")
+    text(S, 64, 126, "Shirley &amp; Gabby · character sheet · concept v3 (teen)", 24, 400, "#5a4a3c")
     # hero: full body (head drawn after body so it sits on the hood)
     body(S, 560, 475, 1.25)
     head(S, 560, 475, 1.25, "grin")
-    S.add(f'<ellipse cx="560" cy="1440" rx="230" ry="20" fill="#000" opacity="0.08"/>')
+    S.add(f'<ellipse cx="560" cy="1446" rx="230" ry="20" fill="#000" opacity="0.08"/>')
     # expressions
     ex = [("grin", "excited"), ("shock", "shocked"), ("whine", "whiny"), ("scheme", "scheming"), ("deadpan", "unimpressed")]
     x0, y0 = 1170, 400
@@ -320,7 +418,7 @@ def sheet(path_svg):
         head(S, cx, cy, 0.85, k, sheet_pin=False)
         text(S, cx, cy + 172, lab, 24, 700, "#5a4a3c", "middle")
     # palette
-    px, py = 2010, 880
+    px, py = 1990, 640
     text(S, px - 30, py - 40, "PALETTE", 30, 800)
     sw = [("skin", P["skin"][0], P["skin"][1]), ("hair", P["hair"][0], P["hair"][1]), ("beanie", P["beanie"][0], P["beanie"][1]),
           ("hoodie", P["hoodie"][0], P["hoodie"][1]), ("jeans", P["jeans"][0], P["jeans"][1]), ("sneakers", P["shoe"][0], P["shoe"][1])]
@@ -332,15 +430,29 @@ def sheet(path_svg):
         text(S, px + 100, yy + 42, f"{a} / {b}", 15, 400, "#5a4a3c")
     # notes
     nx, ny = 1080, 1170
+    # hands
+    text(S, 60, 1555, "HANDS", 30, 800)
+    text(S, 190, 1555, "4 fingers + thumb · nails on the back · lighter palms with lines · knuckle creases", 21, 400, "#5a4a3c")
+    for i, (k, lab, fn) in enumerate(HAND_POSES):
+        hx, hy = 220 + i * 390, 1765
+        g_open(S, hx, hy, 1.55)
+        fill(S, "M-22,-24 L22,-24 L22,10 L-22,10 Z", P["skin"][1], lw=0)  # wrist
+        line(S, "M-22,-24 L-22,10 M22,-24 L22,10", 4)
+        sleeve(S)
+        g_open(S, 0, -6 if k == "thumbs" else 4, 1, 0)
+        fn(S)
+        g_close(S)
+        g_close(S)
+        text(S, hx, hy + 100, lab, 22, 700, "#5a4a3c", "middle")
     notes = [
         "16, Indian, lanky teen. Loud, optimistic, gullible; starts every adventure.",
         "Warm brown skin, slim oval face, big brown eyes, thick brows, a couple of spots.",
         "Thick wavy black hair escaping the beanie: sideburns and curls.",
         "No beard yet: just a faint fuzz on the lip. Characterful nose.",
         "Teal ribbed beanie with pom-pom and a cutting-chai glass pin.",
-        "Red hoodie: hood, drawstrings, kangaroo pocket, faded winged-sock print.",
-        "Baggy hoodie on a skinny frame. Skinny jeans, big white sneakers, thread band.",
-        "Moves fast and bouncy; overacts. Voice: am_puck.",
+        "Red hoodie (hood, strings, pocket, winged-sock print) over a cream kurta with block-print border.",
+        "Red kalava + black thread on the wrist, wired earphones, oiled curls. Skinny jeans, big sneakers.",
+        "Moves fast and bouncy; overacts; does the \u201ckya?!\u201d hand twist. Voice: am_puck.",
     ]
     text(S, nx - 30, ny - 40, "DESIGN NOTES", 30, 800)
     for i, n in enumerate(notes):
@@ -356,7 +468,7 @@ if __name__ == "__main__":
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         b = p.chromium.launch()
-        pg = b.new_page(viewport={"width": 2400, "height": 1500})
+        pg = b.new_page(viewport={"width": 2400, "height": 1900})
         pg.goto("file://" + svg)
         pg.screenshot(path=png)
         b.close()
