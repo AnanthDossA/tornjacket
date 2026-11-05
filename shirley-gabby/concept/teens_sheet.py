@@ -109,19 +109,15 @@ def flower(S, x, y, r=16):
     fill(S, ell(x, y, r * 0.32, r * 0.32), "#f6e27a", lw=2)
 
 
-def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5):
-    c, e = SH, SH_EXPR[expr]
-    g_open(S, x, y, s)
+def sh_back_base(S, c, lw):
     bob = "M-100,-104 C-110,-190 110,-190 100,-104 C108,-46 108,14 102,62 Q56,76 0,74 Q-56,76 -102,62 C-108,14 -108,-46 -100,-104 Z"
     cel(S, bob, *c["hair"], -10, -8, lw)
-    for sx in (-1, 1):  # small ears just peeking out of the bob
-        cel(S, ell(84 * sx, 0, 11, 19), *c["skin"], -3 * sx, -3, lw)
-    cel(S, FACE_SH, *c["skin"], -12, -10, lw)
-    S.add(f'<path d="{ell(-46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/><path d="{ell(46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/>')
+
+
+def sh_front_base(S, c, lw):
     for sx in (-1, 1):  # bob side panels
         cel(S, f"M{-94 * sx},-104 L{-74 * sx},-104 C{-76 * sx},-60 {-80 * sx},-24 {-82 * sx},-10 C{-84 * sx},20 {-88 * sx},40 {-92 * sx},62 L{-104 * sx},62 "
                f"C{-108 * sx},14 {-106 * sx},-50 {-94 * sx},-104 Z", *c["hair"], -4 * sx, -4, lw)
-    # wispy fringe down to the brows
     tips = [(-82, -62), (-66, -54), (-50, -64), (-34, -52), (-18, -66), (-2, -54), (14, -66), (30, -54), (46, -64), (62, -52), (78, -62), (90, -80)]
     d = "M-94,-104 C-94,-156 -46,-174 0,-174 C46,-174 94,-156 94,-104 " + " ".join(
         f"L{tx},{ty} L{tx - 8},{ty - 13}" for tx, ty in reversed(tips)) + " Z"
@@ -130,6 +126,91 @@ def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5):
         line(S, f"M{x0 * 0.8},-158 Q{x0},-124 {x0 + 4},-76", 2, c["hair"][1])
     line(S, "M-52,-156 C-22,-168 22,-168 52,-156", 3, c["shine"], 0.9)
     flower(S, -60, -124, 22)
+
+
+STREAK = "#7a2a3e"
+
+
+def sh_back_angled(S, c, lw):
+    d = ("M-102,-104 C-112,-192 112,-192 102,-104 C110,-46 116,0 114,40 L104,58 L98,48 L92,76 L80,62 "
+         "L-80,62 L-92,76 L-98,48 L-104,58 L-114,40 C-116,0 -110,-46 -102,-104 Z")
+    cel(S, d, *c["hair"], -10, -8, lw)
+
+
+def sh_front_angled(S, c, lw):
+    """angled bob: longer at the face, piecey ends, deep side-swept fringe, burgundy streak"""
+    cel(S, "M-98,-84 C-104,-30 -100,20 -96,64 L-80,80 L-84,60 C-82,20 -80,-30 -84,-72 Z", *c["hair"], -3, -3, lw)
+    cel(S, "M100,-100 C106,-40 104,20 98,62 L82,78 L86,58 C86,20 84,-40 86,-96 Z", *c["hair"], 3, -3, lw)
+    line(S, "M95,-86 C99,-30 97,20 92,60", 7, STREAK, 0.95)
+    cel(S, "M34,-176 C72,-172 98,-146 100,-100 L86,-96 C82,-124 64,-140 40,-146 Z", *c["hair"], -4, -4, lw)
+    fr = "M34,-176 C-20,-176 -78,-150 -100,-80 L-90,-56 C-84,-80 -70,-92 -52,-96 C-30,-98 -6,-104 14,-114 C24,-118 32,-124 40,-134 Z"
+    cel(S, fr, *c["hair"], -6, -6, lw)
+    for d in ("M28,-166 C-10,-160 -50,-140 -82,-88", "M18,-148 C-10,-140 -40,-122 -62,-98", "M30,-140 C10,-126 -10,-114 -30,-104"):
+        line(S, d, 2, c["hair"][1])
+    line(S, "M10,-170 C-30,-166 -60,-150 -76,-126", 6, STREAK, 0.9)
+    line(S, "M60,-160 C76,-150 86,-136 90,-118", 3, c["shine"], 0.9)
+    flower(S, 64, -136, 15)
+
+
+def sh_back_lob(S, c, lw):
+    d = ("M-104,-104 C-114,-194 114,-194 104,-104 C112,-40 118,40 116,118 Q104,134 90,126 Q74,140 60,128 "
+         "L-60,128 Q-74,140 -90,126 Q-104,134 -116,118 C-118,40 -112,-40 -104,-104 Z")
+    cid = cel(S, d, *c["hair"], -10, -8, lw)
+    S.add(f'<g clip-path="url(#{cid})"><rect x="-130" y="96" width="260" height="60" fill="#6a3a2c" opacity="0.35"/></g>')  # soft warm ends
+
+
+def sh_front_lob(S, c, lw):
+    """shoulder-length lob with curtain bangs and soft waves"""
+    for sx in (-1, 1):
+        cel(S, f"M{-100 * sx},-8 C{-110 * sx},30 {-98 * sx},60 {-106 * sx},96 C{-110 * sx},112 {-104 * sx},124 {-96 * sx},132 L{-82 * sx},126 "
+               f"C{-90 * sx},110 {-84 * sx},90 {-86 * sx},60 C{-88 * sx},30 {-82 * sx},10 {-84 * sx},-12 Z", *c["hair"], -3 * sx, -3, lw)
+        S.add(f'<path d="M{-104 * sx},100 C{-108 * sx},114 {-102 * sx},124 {-96 * sx},132 L{-82 * sx},126 C{-88 * sx},116 {-86 * sx},106 {-86 * sx},96 Z" fill="#6a3a2c" opacity="0.5"/>')
+        cel(S, f"M{2 * sx},-174 C{-40 * sx},-172 {-80 * sx},-142 {-92 * sx},-92 C{-96 * sx},-60 {-98 * sx},-32 {-102 * sx},-6 L{-84 * sx},-10 "
+               f"C{-82 * sx},-34 {-66 * sx},-54 {-40 * sx},-62 C{-22 * sx},-70 {-8 * sx},-96 {2 * sx},-128 Z", *c["hair"], -5 * sx, -5, lw)
+        for k in range(3):  # swooping curtain strands
+            line(S, f"M{(-6 - 8 * k) * sx},{-166 + 6 * k} C{(-40 - 6 * k) * sx},{-150 + 6 * k} {(-64 - 4 * k) * sx},{-118 + 8 * k} {(-80 - 3 * k) * sx},{-60 + 10 * k}", 2.2, "#3a3040")
+        line(S, f"M{-24 * sx},-168 C{-50 * sx},-162 {-70 * sx},-148 {-80 * sx},-128", 3, c["shine"], 0.8)
+    line(S, "M0,-180 L2,-128", 3, INK)  # centre parting
+
+
+def sh_back_halfup(S, c, lw):
+    cel(S, gs.fuzzy(0, -198, 38, 12, 0.06), *c["hair"], -6, -6, lw)  # mini bun
+    for k in range(8):
+        a = math.pi * 2 * k / 8
+        S.add(f'<path d="{ell(30 * math.cos(a), -166 + 8 * math.sin(a), 9, 7)}" fill="{SH["kurta"][0]}" stroke="{INK}" stroke-width="2.5"/>')
+    d = ("M-102,-104 C-112,-192 112,-192 102,-104 C108,-46 110,14 106,56 Q112,70 122,64 Q110,82 96,72 "
+         "L-96,72 Q-110,82 -122,64 Q-112,70 -106,56 C-110,14 -108,-46 -102,-104 Z")
+    cel(S, d, *c["hair"], -10, -8, lw)
+
+
+def sh_front_halfup(S, c, lw):
+    """half-up mini bun with a teal scrunchie, wispy see-through fringe, face-framing tendrils, flicked ends"""
+    for sx in (-1, 1):
+        cel(S, f"M{-94 * sx},-104 L{-76 * sx},-104 C{-78 * sx},-60 {-82 * sx},-20 {-86 * sx},20 C{-88 * sx},40 {-92 * sx},56 {-100 * sx},70 "
+               f"L{-108 * sx},58 C{-110 * sx},14 {-106 * sx},-50 {-94 * sx},-104 Z", *c["hair"], -4 * sx, -4, lw)
+        line(S, f"M{-72 * sx},-100 C{-80 * sx},-60 {-70 * sx},-30 {-78 * sx},10", 2.6, c["hair"][0])
+    tips = [(-70, -70), (-50, -82), (-30, -66), (-10, -84), (10, -68), (30, -84), (50, -70), (70, -84)]
+    d = "M-88,-104 C-88,-156 -44,-176 0,-176 C44,-176 88,-156 88,-104 " + " ".join(
+        f"L{tx},{ty} L{tx - 7},{ty - 16}" for tx, ty in reversed(tips)) + " Z"
+    cel(S, d, *c["hair"], -8, -6, lw)
+    line(S, "M-50,-160 C-20,-172 20,-172 50,-160", 3, c["shine"], 0.9)
+
+
+SH_HAIR = {"base": (sh_back_base, sh_front_base), "angled": (sh_back_angled, sh_front_angled),
+           "lob": (sh_back_lob, sh_front_lob), "halfup": (sh_back_halfup, sh_front_halfup)}
+SH_STYLE = "base"
+
+
+def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5, hair=None):
+    c, e = SH, SH_EXPR[expr]
+    back, front = SH_HAIR[hair or SH_STYLE]
+    g_open(S, x, y, s)
+    back(S, c, lw)
+    for sx in (-1, 1):  # small ears just peeking out of the bob
+        cel(S, ell(84 * sx, 0, 11, 19), *c["skin"], -3 * sx, -3, lw)
+    cel(S, FACE_SH, *c["skin"], -12, -10, lw)
+    S.add(f'<path d="{ell(-46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/><path d="{ell(46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/>')
+    front(S, c, lw)
     for sx in (-1, 1):
         eye(S, c, 37 * sx, -8, 30, 22, look=e["look"], lid=e.get("lid", 0), squint=e.get("squint", 0), lashes=True, wide=e.get("wide", False))
     brows(S, c, e["raise_"], e["ang"], 6, -46, 62)
@@ -155,7 +236,72 @@ GB_EXPR = {"grin": dict(raise_=-6, ang=-4, look=(2, 0), mouth="grin", squint=0.3
            "whoa": dict(raise_=-16, ang=-6, look=(0, 0), mouth="o", wide=True)}
 
 
-def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5):
+def gb_hair_base(S, c, lw):
+    hair = ("M-86,-74 C-99,-156 -36,-196 9,-188 C68,-182 103,-148 86,-74 "
+            "L76,-84 Q65,-104 52,-88 Q40,-110 25,-92 Q11,-114 -5,-94 Q-22,-112 -36,-92 Q-50,-108 -65,-88 Q-77,-102 -86,-74 Z")
+    cel(S, hair, *c["hair"], -8, -6, lw)
+    for d in ("M-60,-156 q10,-14 24,-6", "M-20,-172 q12,-12 26,-2", "M24,-166 q12,-10 24,0", "M58,-146 q10,-8 18,4", "M-84,-116 q6,-12 18,-8"):
+        line(S, d, 3, c["shine"], 0.85)
+    for sx in (-1, 1):
+        fill(S, f"M{76 * sx},-88 L{88 * sx},-82 C{90 * sx},-62 {86 * sx},-48 {81 * sx},-40 C{79 * sx},-58 {78 * sx},-72 {76 * sx},-88 Z", c["hair"][0], lw=2)
+
+
+def _fade(S, c, slit=False):
+    """short faded sides: stubble-dots tint on the sides of the head, clipped to the head"""
+    cid = S.uid()
+    S.defs.append(f'<clipPath id="{cid}"><path d="{FACE_GB}"/></clipPath>')
+    pid = S.uid("stub")
+    S.defs.append(f'<pattern id="{pid}" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="{c["hair"][0]}"/>'
+                  f'<circle cx="5" cy="5" r="1" fill="{c["hair"][0]}"/></pattern>')
+    band = "M-100,-130 L-62,-130 C-66,-100 -70,-70 -78,-44 L-100,-40 Z M100,-130 L62,-130 C66,-100 70,-70 78,-44 L100,-40 Z"
+    S.add(f'<g clip-path="url(#{cid})"><path d="{band}" fill="{c["hair"][0]}" opacity="0.3"/><path d="{band}" fill="url(#{pid})" opacity="0.8"/></g>')
+    if slit:
+        line(S, "M66,-96 L80,-80 M70,-102 L84,-86", 3.2, c["skin"][0])
+
+
+def gb_hair_curly(S, c, lw):
+    """curly top + low fade + a shaved slit"""
+    _fade(S, c, slit=True)
+    pts = []
+    for k in range(26):
+        a = math.pi * (1.02 + 0.96 * k / 25)
+        r = 1 + (0.09 if k % 2 else 0)
+        pts.append((84 * r * math.cos(a), -112 + 92 * r * math.sin(a)))
+    pts += [(78, -98), (64, -104), (50, -94), (36, -104), (20, -92), (4, -102), (-12, -92), (-28, -102), (-44, -92), (-60, -102), (-76, -96)]
+    cel(S, _smooth(pts), *c["hair"], -8, -6, lw)
+    for cx_, cy_ in ((-50, -160), (-14, -180), (24, -176), (56, -150), (-66, -128), (-30, -140), (8, -146), (44, -124), (-8, -116), (28, -112)):
+        line(S, f"M{cx_ - 8},{cy_ + 4} a9,9 0 1 1 12,6", 2.6, c["shine"], 0.85)
+
+
+def gb_hair_quiff(S, c, lw):
+    """textured spiky quiff swept up and to the side, short faded sides"""
+    _fade(S, c)
+    d = ("M-80,-94 C-88,-146 -44,-184 6,-192 L22,-214 L32,-194 L56,-210 L56,-188 L84,-188 L74,-166 L92,-160 L80,-140 "
+         "C88,-120 86,-104 80,-94 C50,-108 20,-112 -10,-110 C-40,-108 -62,-102 -80,-94 Z")
+    cel(S, d, *c["hair"], -8, -6, lw)
+    for dd in ("M-60,-120 C-40,-150 -10,-176 20,-206", "M-30,-114 C-10,-140 20,-166 50,-200", "M0,-112 C20,-136 50,-160 80,-180",
+               "M30,-110 C50,-126 70,-142 86,-156"):
+        line(S, dd, 2.2, c["hair"][1])
+    line(S, "M-50,-150 C-30,-170 -6,-184 16,-190", 3, c["shine"], 0.85)
+
+
+def gb_hair_curtain(S, c, lw):
+    """messy middle-part curtain fringe, volume on top, sides over the ear tops"""
+    d = ("M-90,-76 C-102,-160 -40,-202 0,-198 C40,-202 102,-160 90,-76 L80,-66 C74,-98 54,-112 30,-116 "
+         "C18,-112 8,-104 2,-90 C-6,-104 -18,-112 -30,-116 C-54,-112 -74,-98 -80,-66 Z")
+    cel(S, d, *c["hair"], -8, -6, lw)
+    for sx in (-1, 1):
+        line(S, f"M{-4 * sx},-186 C{-30 * sx},-170 {-60 * sx},-130 {-74 * sx},-80", 2.2, c["hair"][1])
+        line(S, f"M{-2 * sx},-160 C{-20 * sx},-146 {-40 * sx},-130 {-52 * sx},-110", 2.2, c["hair"][1])
+        fill(S, f"M{-86 * sx},-84 L{-96 * sx},-60 L{-84 * sx},-66 L{-90 * sx},-46 L{-76 * sx},-64 Z", c["hair"][0], lw=2)
+        line(S, f"M{-20 * sx},-184 C{-44 * sx},-176 {-66 * sx},-150 {-76 * sx},-124", 3, c["shine"], 0.85)
+
+
+GB_HAIR = {"base": gb_hair_base, "curly": gb_hair_curly, "quiff": gb_hair_quiff, "curtain": gb_hair_curtain}
+GB_STYLE = "base"
+
+
+def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5, hair=None):
     c, e = GB, GB_EXPR[expr]
     g_open(S, x, y, s)
     for sx in (-1, 1):
@@ -164,13 +310,7 @@ def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5):
     cel(S, FACE_GB, *c["skin"], -14, -10, lw)
     if e["mouth"] == "grin":  # cheeks bunch up when he smiles
         line(S, "M-56,40 q-5,6 -2,12 M56,40 q5,6 2,12", 2.4, INK, 0.5)  # smile dimples
-    hair = ("M-86,-74 C-99,-156 -36,-196 9,-188 C68,-182 103,-148 86,-74 "
-            "L76,-84 Q65,-104 52,-88 Q40,-110 25,-92 Q11,-114 -5,-94 Q-22,-112 -36,-92 Q-50,-108 -65,-88 Q-77,-102 -86,-74 Z")
-    cel(S, hair, *c["hair"], -8, -6, lw)
-    for d in ("M-60,-156 q10,-14 24,-6", "M-20,-172 q12,-12 26,-2", "M24,-166 q12,-10 24,0", "M58,-146 q10,-8 18,4", "M-84,-116 q6,-12 18,-8"):
-        line(S, d, 3, c["shine"], 0.85)
-    for sx in (-1, 1):
-        fill(S, f"M{76 * sx},-88 L{88 * sx},-82 C{90 * sx},-62 {86 * sx},-48 {81 * sx},-40 C{79 * sx},-58 {78 * sx},-72 {76 * sx},-88 Z", c["hair"][0], lw=2)
+    GB_HAIR[hair or GB_STYLE](S, c, lw)
     for sx in (-1, 1):
         eye(S, c, 36 * sx, -12, 29, 22, look=e.get("look", (0, 0)), lid=e.get("lid", 0), squint=e.get("squint", 0),
             spiral=e.get("spiral", False), wide=e.get("wide", False))
