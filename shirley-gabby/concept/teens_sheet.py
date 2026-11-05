@@ -201,14 +201,18 @@ SH_HAIR = {"base": (sh_back_base, sh_front_base), "angled": (sh_back_angled, sh_
 SH_STYLE = "base"
 
 
-def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5, hair=None):
+def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5, hair=None, features_only=False):
+    """features_only=True draws just the face features (for 3D face decals)"""
     c, e = SH, SH_EXPR[expr]
     back, front = SH_HAIR[hair or SH_STYLE]
+    if features_only:
+        back = front = (lambda *a: None)
     g_open(S, x, y, s)
     back(S, c, lw)
-    for sx in (-1, 1):  # small ears just peeking out of the bob
-        cel(S, ell(84 * sx, 0, 11, 19), *c["skin"], -3 * sx, -3, lw)
-    cel(S, FACE_SH, *c["skin"], -12, -10, lw)
+    if not features_only:
+        for sx in (-1, 1):  # small ears just peeking out of the bob
+            cel(S, ell(84 * sx, 0, 11, 19), *c["skin"], -3 * sx, -3, lw)
+        cel(S, FACE_SH, *c["skin"], -12, -10, lw)
     S.add(f'<path d="{ell(-46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/><path d="{ell(46, 34, 18, 10)}" fill="#c4505c" opacity="0.16"/>')
     front(S, c, lw)
     for sx in (-1, 1):
@@ -301,16 +305,18 @@ GB_HAIR = {"base": gb_hair_base, "curly": gb_hair_curly, "quiff": gb_hair_quiff,
 GB_STYLE = "base"
 
 
-def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5, hair=None):
+def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5, hair=None, features_only=False):
     c, e = GB, GB_EXPR[expr]
     g_open(S, x, y, s)
-    for sx in (-1, 1):
-        cel(S, ell(89 * sx, -6, 19, 29), *c["skin"], -6 * sx, -4, lw)
-        line(S, f"M{84 * sx},-18 Q{97 * sx},-6 {86 * sx},12", 3, INK, 0.7)
-    cel(S, FACE_GB, *c["skin"], -14, -10, lw)
+    if not features_only:
+        for sx in (-1, 1):
+            cel(S, ell(89 * sx, -6, 19, 29), *c["skin"], -6 * sx, -4, lw)
+            line(S, f"M{84 * sx},-18 Q{97 * sx},-6 {86 * sx},12", 3, INK, 0.7)
+        cel(S, FACE_GB, *c["skin"], -14, -10, lw)
     if e["mouth"] == "grin":  # cheeks bunch up when he smiles
         line(S, "M-56,40 q-5,6 -2,12 M56,40 q5,6 2,12", 2.4, INK, 0.5)  # smile dimples
-    GB_HAIR[hair or GB_STYLE](S, c, lw)
+    if not features_only:
+        GB_HAIR[hair or GB_STYLE](S, c, lw)
     for sx in (-1, 1):
         eye(S, c, 36 * sx, -12, 29, 22, look=e.get("look", (0, 0)), lid=e.get("lid", 0), squint=e.get("squint", 0),
             spiral=e.get("spiral", False), wide=e.get("wide", False))
