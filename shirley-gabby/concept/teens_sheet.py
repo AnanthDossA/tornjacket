@@ -15,9 +15,9 @@ SH = dict(skin=("#8c5b3d", "#5f3c27"), palm=("#ad7653", "#7d5136"), hair=("#1712
           clip=("#3fae5a", "#24803c"), kurti=("#f2c43c", "#c4952a"), band1="#e8697a", band2="#4caf6a", band3="#e9893a",
           yoke=("#c8323e", "#8e1f2a"), pants=("#3e7a46", "#275230"), gold=("#ecc65e", "#b48c2c"), silver=("#d9dde3", "#9aa1ab"),
           lips="#6e3a2e", sandal=("#c9893c", "#8f5e24"), iris="#3e2416",
-          kurta=("#2f8f8c", "#1e6462"), buti="#f4efe2", jeans=("#4d6ea6", "#344d7d"), shoe=("#f4f3ee", "#c6c4bb"))
+          kurta=("#2f8f8c", "#1e6462"), buti="#f4efe2", zh=("#b583c9", "#83579a"), zh_dk="#9b6bb0", tee="#f6f3ec", jeans=("#4d6ea6", "#344d7d"), shoe=("#f4f3ee", "#c6c4bb"))
 GB = dict(skin=("#a46f4b", "#774d31"), palm=("#c38f69", "#926242"), hair=("#17121a", "#0b080d"), shine="#5d6b8a",
-          shirt=("#24345e", "#151f3c"), leaf="#dfe7f2", shorts=("#9fb1c6", "#6f8299"), tape="#f4f4ee", band="#e9d27a",
+          shirt=("#24345e", "#151f3c"), leaf="#dfe7f2", hood=("#e5483b", "#ad2f28"), hood_dk="#c23a31", shorts=("#9fb1c6", "#6f8299"), tape="#f4f4ee", band="#e9d27a",
           shoe=("#f2f1ea", "#c3c1b8"), sole="#d84a3c", iris="#3e2416", mouth="#3b1519", tongue="#d0625b")
 
 
@@ -342,6 +342,7 @@ def shirley_body(S, x, y, s=1.0, lw=4.5):
     c = SH
     skin_hands(c)
     g_open(S, x, y, s)
+    cel(S, "M-66,150 C-74,112 -36,100 0,102 C36,100 74,112 66,150 C46,162 -46,162 -66,150 Z", c["zh_dk"], c["zh"][1], -5, -5, lw)  # hood down
     cel(S, "M-20,108 L20,108 L22,156 L-22,156 Z", *c["skin"], -8, 10, lw)
     # slim jeans + sneakers
     for sx in (-1, 1):
@@ -355,42 +356,37 @@ def shirley_body(S, x, y, s=1.0, lw=4.5):
                f"C{lx - 58 * sx},712 {lx - 46 * sx},696 {lx - 26 * sx},694 Z", *c["shoe"], -3, -3, lw)
         fill(S, f"M{lx + 26 * sx},718 L{lx - 54 * sx},718 L{lx - 54 * sx},728 L{lx + 26 * sx},728 Z", "#d9d6cc", lw=2.5)
         line(S, f"M{lx - 18 * sx},704 l{-10 * sx},-3 M{lx - 16 * sx},710 l{-10 * sx},-3", 2, INK, 0.6)
-    # fitted kurti: shaped at the waist, slight flare to mid-thigh, side slits
-    kurti = ("M-46,146 C-66,150 -80,160 -82,190 C-84,236 -74,270 -66,300 C-70,350 -80,400 -88,466 "
-             "L88,466 C80,400 70,350 66,300 C74,270 84,236 82,190 C80,160 66,150 46,146 Z")
-    cid = cel(S, kurti, *c["kurta"], -12, -8, lw)
-    pid = S.uid("buti")
-    S.defs.append(f'<pattern id="{pid}" width="26" height="26" patternUnits="userSpaceOnUse">'
-                  + "".join(f'<circle cx="{13 + 3.2 * math.cos(math.radians(90 * k))}" cy="{13 + 3.2 * math.sin(math.radians(90 * k))}" r="2.4" fill="{c["buti"]}"/>' for k in range(4))
-                  + f'<circle cx="0" cy="0" r="1.6" fill="{c["buti"]}"/><circle cx="26" cy="26" r="1.6" fill="{c["buti"]}"/></pattern>')
-    S.add(f'<g clip-path="url(#{cid})"><path d="{kurti}" fill="url(#{pid})" opacity="0.85"/>'
-          f'<rect x="-100" y="440" width="200" height="30" fill="{c["gold"][0]}"/>'
-          + "".join(f'<path d="M{-90 + 14 * i},455 l5,-7 l5,7 l-5,7 Z" fill="{c["yoke"][0]}"/>' for i in range(14)) + "</g>")
-    S.add(f'<path d="{kurti}" fill="none" stroke="{INK}" stroke-width="{lw}" stroke-linejoin="round"/>')
-    for sx in (-1, 1):  # side slits
-        fill(S, f"M{74 * sx},410 L{84 * sx},464 L{64 * sx},464 Z", c["jeans"][0], lw=3)
-    line(S, "M-64,300 Q0,312 64,300", 2, INK, 0.35)  # waist shaping
-    for d in ("M-40,320 q-6,60 -14,130", "M40,320 q6,60 14,130"):
-        line(S, d, 2, INK, 0.3)
-    # mandarin collar + short placket with gold buttons and piping
-    cel(S, "M-26,136 L26,136 L28,156 L-28,156 Z", *c["kurta"], -3, -3, 3.5)
-    line(S, "M-28,156 L28,156", 3, c["gold"][0])
-    line(S, "M0,156 L0,226", 3, c["gold"][0])
-    line(S, "M0,156 L0,226", 1, INK, 0.5)
-    for by in (172, 192, 212):
-        fill(S, ell(6, by, 3.5, 3.5), c["gold"][0], lw=1.4)
+    # fitted lilac zip hoodie (half-zipped over a white tee), ribbed hem at the hip
+    zh = ("M-46,146 C-66,150 -80,160 -82,190 C-84,236 -74,270 -68,300 C-70,340 -74,380 -78,418 "
+          "L78,418 C74,380 70,340 68,300 C74,270 84,236 82,190 C80,160 66,150 46,146 Z")
+    cel(S, zh, *c["zh"], -12, -8, lw)
+    fill(S, "M-26,146 L0,236 L26,146 Z", c["tee"], lw=3)  # tee showing in the open zip
+    fill(S, "M-26,146 Q0,160 26,146", c["skin"][0], lw=0)
+    line(S, "M-26,146 Q0,162 26,146", 3)
+    S.add(f'<g transform="translate(0,196) scale(0.6)"><circle r="10" fill="none" stroke="{c["zh"][1]}" stroke-width="3"/>'
+          f'<ellipse rx="22" ry="7" fill="none" stroke="{c["zh"][1]}" stroke-width="3" transform="rotate(-20)"/></g>')  # little planet print
+    line(S, "M-26,146 L0,236 L26,146", 4)
+    line(S, "M0,236 L0,414", 3, INK, 0.8)
+    fill(S, "M-4,236 L4,236 L5,256 L-5,256 Z", "#d8d8de", lw=2)  # zip pull
+    cel(S, "M-80,404 Q0,414 80,404 L78,428 Q0,436 -78,428 Z", c["zh_dk"], c["zh"][1], -4, -3, lw)
+    for k in range(-4, 5):
+        line(S, f"M{k * 17},410 L{k * 17},430", 1.5, c["zh"][1], 0.7)
+    for sx in (-1, 1):
+        line(S, f"M{20 * sx},150 C{22 * sx},180 {17 * sx},204 {22 * sx},226", 5.5, INK)
+        line(S, f"M{20 * sx},150 C{22 * sx},180 {17 * sx},204 {22 * sx},226", 2.6, "#fbfaf4")
+    line(S, "M-62,300 Q0,310 62,300", 2, INK, 0.35)
     # 3/4 sleeves; screen-left arm relaxed with a gold bangle, screen-right hand on hip
-    hose(S, [(-70, 166), (-90, 290)], 34, c["kurta"][0], lw)
-    line(S, "M-108,286 L-72,290", 4, c["gold"][0])
-    hose(S, [(-90, 296), (-96, 420)], 26, c["skin"][0], lw)
+    hose(S, [(-70, 166), (-90, 290), (-95, 392)], 34, c["zh"][0], lw)  # full sleeve, ribbed cuff
+    cel(S, "M-114,384 L-76,386 L-77,404 L-114,402 Z", c["zh_dk"], c["zh"][1], -2, -2, 3.5)
+    hose(S, [(-95, 404), (-96, 420)], 24, c["skin"][0], lw)
     line(S, "M-112,412 Q-96,420 -80,412", 7, INK)
     line(S, "M-112,412 Q-96,420 -80,412", 4, c["gold"][0])
     S.add('<g transform="translate(-96,428) rotate(180) scale(0.58)">')
     gs.hand_open(S, 0.5, False)
     S.add("</g>")
-    hose(S, [(70, 166), (134, 266)], 34, c["kurta"][0], lw)
-    line(S, "M120,280 L150,256", 4, c["gold"][0])
-    hose(S, [(136, 272), (84, 318)], 26, c["skin"][0], lw)
+    hose(S, [(70, 166), (134, 266), (96, 306)], 34, c["zh"][0], lw)
+    cel(S, "M86,292 L108,318 L94,330 L74,304 Z", c["zh_dk"], c["zh"][1], -2, -2, 3.5)
+    hose(S, [(90, 314), (84, 318)], 24, c["skin"][0], lw)
     S.add('<g transform="translate(84,320) rotate(-120) scale(0.56)">')
     gs.hand_fist(S)
     S.add("</g>")
@@ -402,6 +398,7 @@ def gabby_body(S, x, y, s=1.0, lw=4.5, salute=True):
     c = GB
     skin_hands(c)
     g_open(S, x, y, s)
+    cel(S, "M-80,150 C-90,108 -40,94 0,98 C40,94 90,108 80,150 C54,166 -54,166 -80,150 Z", c["hood_dk"], c["hood"][1], -6, -6, lw)  # hood down
     cel(S, "M-22,110 L22,110 L24,156 L-24,156 Z", *c["skin"], -8, 10, lw)
     # legs (skin), denim shorts, sneakers; band-aid on one knee
     for sx in (-1, 1):
@@ -421,28 +418,31 @@ def gabby_body(S, x, y, s=1.0, lw=4.5, salute=True):
             line(S, f"M{(12 + 15 * k) * sx},470 l{3 * sx},8", 2, INK, 0.6)  # frayed hem
     line(S, "M-60,380 l10,0 M60,380 l-10,0", 2, INK, 0.4)
     S.add(f'<path d="{ell(-52, 420, 14, 11)}" fill="#ffffff" opacity="0.55"/><path d="{ell(56, 410, 12, 9)}" fill="#ffffff" opacity="0.5"/>')  # chalk handprints
-    # leaf-print navy shirt (short sleeves), chest out
-    shirt = "M-50,128 C-80,132 -96,148 -100,184 C-106,244 -102,300 -96,356 L96,356 C102,300 106,244 100,184 C96,148 80,132 50,128 Z"
-    cid = cel(S, shirt, *c["shirt"], -14, -8, lw)
-    pid = S.uid("leaf")
-    S.defs.append(f'<pattern id="{pid}" width="46" height="46" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">'
-                  f'<path d="M6,30 C10,14 26,8 34,10 C30,22 20,32 6,30 Z" fill="{c["leaf"]}" opacity="0.9"/>'
-                  f'<path d="M8,29 L30,12" stroke="{c["shirt"][0]}" stroke-width="1.5"/>'
-                  f'<path d="M28,44 C30,36 38,32 44,34 C42,40 36,44 28,44 Z" fill="{c["leaf"]}" opacity="0.7"/></pattern>')
-    S.add(f'<g clip-path="url(#{cid})"><path d="{shirt}" fill="url(#{pid})"/></g>')
-    S.add(f'<path d="{shirt}" fill="none" stroke="{INK}" stroke-width="{lw}" stroke-linejoin="round"/>')
+    # sporty red hoodie (hood down), drawstrings, kangaroo pocket, ribbed hem
+    hoodie = "M-50,128 C-80,132 -96,148 -100,184 C-106,244 -102,300 -98,350 L98,350 C102,300 106,244 100,184 C96,148 80,132 50,128 Z"
+    cel(S, hoodie, *c["hood"], -14, -8, lw)
+    cel(S, "M-100,340 Q0,350 100,340 L98,368 Q0,378 -98,368 Z", c["hood_dk"], c["hood"][1], -6, -3, lw)
+    for k in range(-5, 6):
+        line(S, f"M{k * 17},346 L{k * 17},372", 1.5, c["hood"][1], 0.7)
+    pocket = "M-66,262 Q0,252 66,262 L78,334 Q0,342 -78,334 Z"
+    cel(S, pocket, *c["hood"], -8, -5, lw)
+    line(S, "M-66,262 L-78,334 M66,262 L78,334", 4.5)
     for sx in (-1, 1):
-        cel(S, f"M{-48 * sx},126 L{-6 * sx},168 L{-30 * sx},178 L{-58 * sx},150 Z", *c["shirt"], -3, -3, 3.5)
-    line(S, "M0,168 L0,352", 2.5, INK, 0.7)
-    for by in (200, 240, 280, 320):
-        fill(S, ell(6, by, 4, 4), "#e8ecf2", lw=1.5)
+        line(S, f"M{16 * sx},146 C{18 * sx},180 {13 * sx},206 {18 * sx},234", 6, INK)
+        line(S, f"M{16 * sx},146 C{18 * sx},180 {13 * sx},206 {18 * sx},234", 3, "#fbfaf4")
+        fill(S, f"M{13 * sx},232 L{23 * sx},232 L{22 * sx},248 L{14 * sx},248 Z", "#c9c8bf", lw=2.2)
+    for d in ("M-84,214 q-6,30 -2,60", "M84,214 q6,30 2,60", "M-40,190 q20,10 40,4"):
+        line(S, d, 2.2, INK, 0.4)
+    S.add(f'<path d="{ell(-30, 300, 12, 9)}" fill="#ffffff" opacity="0.5"/>')  # chalk smudge
     if salute:
         for sx in (-1, 1):
             sh, el, wr = (74 * sx, 160), (124 * sx, 40), (160 * sx, -80)
             hose(S, [sh, el, wr], 32, c["skin"][0], lw)
             ang = math.degrees(math.atan2(el[0] - sh[0], -(el[1] - sh[1])))
             S.add(f'<g transform="translate({sh[0]},{sh[1]}) rotate({ang:.1f})">')
-            cel(S, "M-34,14 C-38,-20 -30,-50 -26,-62 L26,-62 C30,-50 38,-20 34,14 Z", *c["shirt"], -4, -4, lw)
+            cel(S, "M-34,14 C-38,-20 -34,-80 -28,-112 L28,-112 C34,-80 38,-20 34,14 Z", *c["hood"], -4, -4, lw)  # sleeve pushed up
+            cel(S, "M-30,-104 Q0,-110 30,-104 L32,-126 Q0,-134 -32,-126 Z", c["hood_dk"], c["hood"][1], -3, -3, 3.5)
+            line(S, "M-20,-60 q8,6 16,0 M-16,-30 q8,6 16,0", 2, INK, 0.4)
             S.add("</g>")
             ang2 = math.degrees(math.atan2(wr[0] - el[0], -(wr[1] - el[1])))
             S.add(f'<g transform="translate({wr[0]},{wr[1]}) rotate({ang2:.1f})">')
@@ -504,7 +504,7 @@ def sheet(path_svg):
     S = SVG(Wd, Ht)
     S.add(f'<rect width="{Wd}" height="{Ht}" fill="{BG}"/>')
     text(S, 60, 84, "SHIRLEY &amp; GABBY", 64, 900)
-    text(S, 64, 122, "comic-style teen redesign · v2", 24, 500, "#5a4a3c")
+    text(S, 64, 122, "comic-style teen redesign · v4 (hoodies)", 24, 500, "#5a4a3c")
     # panels
     halftone_bg(S, 40, 150, 1140, 1100, "#f6b2a6", "#e4877c")
     halftone_bg(S, 1220, 150, 1140, 1100, "#ffd84d", "#f2a93b", burst=(1790, 640, 300, 560, "#ffe98a"))
