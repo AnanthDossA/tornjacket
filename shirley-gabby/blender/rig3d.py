@@ -151,6 +151,9 @@ def fit_metarig(meta, S, off):
         if n in E:
             E.remove(E[n])
     w = lambda x, y, d=0.0: W(x, y, d) + off
+    # remember the hands' and feet's ORIGINAL frames before any chain is moved (moving the forearm/shin
+    # drags the connected hand/foot head along and would corrupt the mapping)
+    orig = {n: (E[n].matrix.copy(), E[n].length) for n in ("hand.L", "hand.R", "foot.L", "foot.R") if n in E}
 
     def put(name, head, tail, keep_children=True):
         eb = E[name]
@@ -162,10 +165,11 @@ def fit_metarig(meta, S, off):
         q = old_dir.rotation_difference((eb.tail - eb.head).normalized())
         eb.align_roll(q @ old_z)
 
-    def put_group(root, head, tail, length_scale):
-        """move a bone + all its descendants rigidly (hands, feet): map the old bone frame to the new one"""
+    def put_group(root, head, tail, new_len):
+        """move a bone + all its descendants rigidly (hands, feet): map the ORIGINAL bone frame to the new one"""
         eb = E[root]
-        old = eb.matrix.copy()
+        old, old_len = orig[root]
+        length_scale = new_len / old_len
         kids = _descendants(eb)
         put(root, head, tail)
         new = eb.matrix.copy()
@@ -182,14 +186,11 @@ def fit_metarig(meta, S, off):
         put(f"shoulder.{s}", w(14 * sx, J["neck"] + 4, 2), w((shx - 10) * sx, shy - 2, 2))
         put(f"upper_arm.{s}", w(shx * sx, shy, 0), w(elx * sx, ely, 7))      # elbow slightly back: bends forward
         put(f"forearm.{s}", w(elx * sx, ely, 7), w(wrx * sx, wry, 0))
-        old_len = E[f"hand.{s}"].length
-        new_len = 40 * K
-        put_group(f"hand.{s}", w(wrx * sx, wry, 0), w((wrx + 1) * sx, wry + 40, -2), new_len / old_len)
+        put_group(f"hand.{s}", w(wrx * sx, wry, 0), w((wrx + 1) * sx, wry + 30, -2), 30 * K)  # palm part; fingers follow
         hpx, hpy = J["hip"]; knx, kny = J["kn"]; anx, any_ = J["an"]
         put(f"thigh.{s}", w(hpx * sx, hpy, 0), w(knx * sx, kny, -6))          # knee slightly forward
         put(f"shin.{s}", w(knx * sx, kny, -6), w(anx * sx, any_, 2))
-        old_len = E[f"foot.{s}"].length
-        put_group(f"foot.{s}", w(anx * sx, any_, 2), w(anx * sx, any_ + 30, -42), (52 * K) / old_len)
+        put_group(f"foot.{s}", w(anx * sx, any_, 2), w(anx * sx, any_ + 30, -42), 52 * K)
 
 
 def build_rig(sc, name, S, off):
@@ -251,6 +252,119 @@ def keep_torso_off_arms(obj, x_off, x_in, x_out, z_top):
             spine.add([v.index], cur + moved, "REPLACE")
             changed += 1
     return changed
+
+
+LOWER_ARM = ("forearm", "hand", "f_", "thumb", "palm")
+
+
+def transfer_weights(src, dst, k=3, x_off=0.0, core_x=None, torso=None, allow_lower_arm=False):
+    """dst gets src's bone weights from the nearest src surface (k nearest verts, inverse-distance).
+    core_x: skin verts with |x| < core_x form the 'core' (torso+legs); dst verts inside `torso`
+    (x_max, z_max) or all verts when torso is None and core_x is set, sample only the core, so clothes
+    never copy the movement of a hand/arm that merely hangs next to them."""
+    from mathutils.kdtree import KDTree
+    sv = src.data.vertices
+    kd_all = KDTree(len(sv))
+    core = [v for v in sv if core_x is None or abs(v.co.x - x_off) < core_x]
+    kd_core = KDTree(len(core))
+    for v in sv:
+        kd_all.insert(src.matrix_world @ v.co, v.index)
+    for v in core:
+        kd_core.insert(src.matrix_world @ v.co, v.index)
+    kd_all.balance(); kd_core.balance()
+    names = {g.index: g.name for g in src.vertex_groups}
+    sw = [{names[g.group]: g.weight for g in v.groups if g.weight > 0.001
+           and (allow_lower_arm or not any(t in names[g.group] for t in LOWER_ARM))} for v in sv]
+    for g in list(dst.vertex_groups):
+        dst.vertex_groups.remove(g)
+    groups = {}
+    for v in dst.data.vertices:
+        acc, tot = {}, 0.0
+        in_core = core_x is not None and (torso is None or (abs(v.co.x - x_off) < torso[0] and v.co.z < torso[1]))
+        for co, i, d in (kd_core if in_core else kd_all).find_n(dst.matrix_world @ v.co, k):
+            w = 1.0 / max(d, 1e-4)
+            tot += w
+            for n, x in sw[i].items():
+                acc[n] = acc.get(n, 0.0) + x * w
+        for n, x in acc.items():
+            if x / tot > 0.002:
+                g = groups.get(n) or dst.vertex_groups.new(name=n)
+                groups[n] = g
+                g.add([v.index], x / tot, "REPLACE")
+    return len(groups)
+
+
+def deform_stack(o, rig, cs_factor=0.6, cs_iter=8):
+    """Armature -> Corrective Smooth -> (ink) Solidify, parented to the rig keeping its place"""
+    if o.parent is not rig:
+        mw = o.matrix_world.copy()
+        o.parent = rig
+        o.matrix_world = mw
+    arm = next((m for m in o.modifiers if m.type == "ARMATURE"), None) or o.modifiers.new("Armature", "ARMATURE")
+    arm.object = rig
+    cs = o.modifiers.new("keep_volume", "CORRECTIVE_SMOOTH")
+    cs.rest_source = "ORCO"
+    cs.smooth_type = "LENGTH_WEIGHTED"
+    cs.factor, cs.iterations = cs_factor, cs_iter
+    order = [arm.name, cs.name] + [m.name for m in o.modifiers if m.name not in (arm.name, cs.name)]
+    for i, n in enumerate(order):
+        o.modifiers.move(o.modifiers.find(n), i)
+
+
+FINGERS = ("f_index", "f_middle", "f_ring", "f_pinky", "thumb")
+
+
+def build_hands(sc, rig, who, skin_m, inkm, bones):
+    """real fingers: palm on the hand bone, one capsule per finger segment riding its DEF bone"""
+    B = lambda n, e="head": bone_world(rig, n, e)
+    D = lambda n: ("DEF-" + n) if ("DEF-" + n) in bones else ("ORG-" + n)
+    for s in ("L", "R"):
+        pal = [n for n in (f"ORG-palm.01.{s}", f"ORG-palm.02.{s}", f"ORG-palm.03.{s}", f"ORG-palm.04.{s}") if n in bones]
+        heads = [B(n) for n in pal]; tails = [B(n, "tail") for n in pal]
+        c = sum(heads + tails, Vector()) / (2 * len(pal))
+        zdir = (sum(tails, Vector()) / len(tails) - sum(heads, Vector()) / len(heads)).normalized()
+        xdir = (tails[-1] - tails[0])
+        xdir = (xdir - zdir * xdir.dot(zdir)).normalized()
+        ydir = zdir.cross(xdir)
+        half_w = (tails[-1] - tails[0]).length / 2 + 7 * K
+        half_l = (sum(tails, Vector()) / len(tails) - sum(heads, Vector()) / len(heads)).length * 0.62
+        palm = ellipsoid(half_w, 11 * K, half_l)
+        basis = Matrix((xdir, ydir, zdir)).transposed().to_4x4()
+        bmesh.ops.transform(palm, matrix=Matrix.Translation(c) @ basis, verts=palm.verts)
+        o = simple_object(sc, f"{who}_palm{s}", palm, skin_m, inkm, 0.008)
+        parent_to_bone(o, rig, D(f"hand.{s}"))
+        for f in FINGERS:
+            chain = [n for n in (f"{f}.01.{s}", f"{f}.02.{s}", f"{f}.03.{s}") if f"ORG-{n}" in bones]
+            for i, n in enumerate(chain):
+                r0 = (9.5 if f == "thumb" else 8.2) * K * (1 - 0.06 * i)
+                a, b = B("ORG-" + n), B("ORG-" + n, "tail")
+                if i < len(chain) - 1:
+                    b = b + (b - a).normalized() * r0 * 0.3  # overlap into the next segment
+                o = simple_object(sc, f"{who}_{n}", seg_capsule(a, b, r0, r0 * 0.94), skin_m, inkm, 0.0065)
+                parent_to_bone(o, rig, D(n))
+
+
+# Rigify (Blender 5.x) finger rig: curl a whole finger with its MASTER control, rotation X
+# (measured: X negative curls toward the palm, X positive straightens/extends). Values in degrees.
+HAND_SHAPES = {
+    "open":   dict(f_index=14, f_middle=14, f_ring=14, f_pinky=14, thumb=12),
+    "relax":  dict(f_index=-22, f_middle=-28, f_ring=-32, f_pinky=-36, thumb=-10),
+    "fist":   dict(f_index=-105, f_middle=-108, f_ring=-108, f_pinky=-105, thumb=-55),
+    "point":  dict(f_index=12, f_middle=-108, f_ring=-108, f_pinky=-105, thumb=-55),
+    "thumbs": dict(f_index=-105, f_middle=-108, f_ring=-108, f_pinky=-105, thumb=22),
+}
+
+
+def hand_shape(R, s, shape, frame=None):
+    rig = R["rig"]
+    for f, deg in HAND_SHAPES[shape].items():
+        n = f"{f}.01_master.{s}"
+        if n in rig.pose.bones:
+            pb = rig.pose.bones[n]
+            pb.rotation_mode = "XYZ"
+            pb.rotation_euler = (math.radians(deg), 0, 0)
+            if frame is not None:
+                pb.keyframe_insert("rotation_euler", frame=frame)
 
 
 def auto_weights(sc, rig, objs):
@@ -441,18 +555,7 @@ def build_rigged(who="gabby", sc=None, x_off=0.0):
             ua, fa, hd = (f"ORG-upper_arm.{s}", f"ORG-forearm.{s}", f"ORG-hand.{s}")
             parts.append(seg_capsule(B(ua), B(ua, "tail"), ar0 * K, (ar0 - 2) * K))
             parts.append(seg_capsule(B(fa), B(fa, "tail"), (ar0 - 2) * K, ar1 * K))
-            hh, ht = B(hd), B(hd, "tail")
-            palm = ellipsoid(10 * K, 22 * K, 24 * K)
-            rot = Vector((0, 0, -1)).rotation_difference((ht - hh).normalized()).to_matrix().to_4x4()
-            bmesh.ops.transform(palm, matrix=Matrix.Translation((hh + ht) / 2) @ rot, verts=palm.verts)
-            parts.append(palm)
-            for f in ("f_index", "f_middle", "f_ring", "f_pinky", "thumb"):
-                chain = [n for n in (f"ORG-{f}.01.{s}", f"ORG-{f}.02.{s}", f"ORG-{f}.03.{s}") if n in bones]
-                if not chain:
-                    continue
-                r = (7.5 if f == "thumb" else 6.5) * K
-                for n in chain:
-                    parts.append(seg_capsule(B(n), B(n, "tail"), r, r * 0.92))
+            parts.append(sphere_at(B(fa, "tail"), ar1 * K))  # wrist cap (hands are separate, rig-driven)
             th, sh_ = f"ORG-thigh.{s}", f"ORG-shin.{s}"
             parts.append(seg_capsule(B(th), B(th, "tail"), lr0 * K, (lr0 - 2) * K))
             parts.append(seg_capsule(B(sh_), B(sh_, "tail"), (lr0 - 2) * K, lr1 * K))
@@ -481,11 +584,16 @@ def build_rigged(who="gabby", sc=None, x_off=0.0):
             sp.append(seg_capsule(a, a + (b - a) * 0.5, 44 * K, 40 * K))
         shorts = fused_object(sc, f"{who}_shorts", sp, M["low"], Kk, voxel=0.009)
         info["remesh_s"] = round(time.time() - t0, 1)
-    info["weights"] = auto_weights(sc, rig, [skin, hoodie, shorts])
+    info["weights"] = auto_weights(sc, rig, [skin])
     sh_z = B("ORG-upper_arm.L").z
     shx = abs(B("ORG-upper_arm.L").x - off.x)
-    info["torso_fix"] = [keep_torso_off_arms(hoodie, off.x, shx * 0.78, shx * 1.02, sh_z - 0.04),
-                         keep_torso_off_arms(skin, off.x, shx * 0.7, shx * 0.86, sh_z - 0.04)]
+    info["torso_fix"] = keep_torso_off_arms(skin, off.x, shx * 0.7, shx * 0.86, sh_z - 0.04)
+    # clothes get their own deformation setup: copy the body's weights (nearest body surface) and
+    # keep their volume with a corrective smooth, so they follow the body instead of ballooning
+    info["cloth_weights"] = [transfer_weights(skin, hoodie, x_off=off.x, core_x=shx * 0.7, torso=(shx * 0.92, sh_z - 0.03)),
+                             transfer_weights(skin, shorts, x_off=off.x, core_x=shx * 0.7)]
+    for o in (skin, hoodie, shorts):
+        deform_stack(o, rig, cs_factor=0.5 if o is skin else 0.85, cs_iter=6 if o is skin else 14)
 
     # ---------------- rigid parts on bones: head, hair, ears, face layers, eyes, brows, accessories
     head_bone = "DEF-spine.006" if "DEF-spine.006" in bones else "ORG-spine.006"
@@ -543,6 +651,7 @@ def build_rigged(who="gabby", sc=None, x_off=0.0):
     for o in sc.objects:
         if o.type == "MESH" and any(t in o.name for t in ("_hair", "_nape", "_string", "_pocket")):
             o.visible_shadow = False
+    build_hands(sc, rig, who, M["skin"], Kk, bones)
     rig["who"] = who
     R = dict(rig=rig, eyes=eyes, brows=brows, face=face_layers, S=S, sc=sc)
     set_face(R, S["exprs"][0])
@@ -615,3 +724,118 @@ def demo_rig(who="gabby"):
     set_face(R, "whoa", look=(-6, 2))
     out["whoa"] = render_still(sc, os.path.join(OUT, f"rig_{who}_whoa.png"))
     return out
+
+
+# ------------------------------------------------------------------ tests + animation
+def move_world(R, bone, dz=0.0, dy=0.0, frame=None):
+    rig = R["rig"]
+    pb = rig.pose.bones[bone]
+    M = (rig.matrix_world @ pb.bone.matrix_local).to_3x3()
+    pb.location = M.inverted() @ Vector((0, dy, dz))
+    if frame is not None:
+        pb.keyframe_insert("location", frame=frame)
+
+
+def reset_pose(R):
+    for pb in R["rig"].pose.bones:
+        pb.rotation_mode = "XYZ"
+        pb.rotation_euler = (0, 0, 0)
+        pb.location = (0, 0, 0)
+
+
+def stage(R, cam=((2.2, -7.8, 1.9), (0.1, 0, 1.65), 38)):
+    sc = R["sc"]
+    if not any(o.type == "LIGHT" for o in sc.objects):
+        sun(sc, rot=(56, 0, -34), energy=4)
+    if "floor" not in sc.objects:
+        backdrop(sc)
+    camera(sc, *cam[:2], lens=cam[2])
+    fk(R)
+    return sc
+
+
+def test_stills(R):
+    """hand shapes close-up + arms-up stretch test (front and 3/4)"""
+    sc = stage(R)
+    out = {}
+    reset_pose(R)
+    for s, sx in (("L", 1), ("R", -1)):
+        rot(R, f"upper_arm_fk.{s}", 0, 0, sx * 150)
+        rot(R, f"forearm_fk.{s}", 15, 0, 0)
+        hand_shape(R, s, "open")
+    set_face(R, "grin")
+    camera(sc, (0.0, -8.6, 2.0), (0, 0, 1.75), lens=40)
+    out["stretch_front"] = render_still(sc, os.path.join(OUT, "rig2_stretch_front.png"))
+    camera(sc, (3.4, -7.0, 2.2), (0, 0, 1.75), lens=40)
+    out["stretch_34"] = render_still(sc, os.path.join(OUT, "rig2_stretch_34.png"))
+    # hands: five shapes on the left hand (at rest by his side), close-up from the front-outside
+    reset_pose(R)
+    for i, shp in enumerate(("open", "relax", "fist", "point", "thumbs")):
+        hand_shape(R, "L", shp)
+        sc.view_layers[0].update()
+        pb = R["rig"].pose.bones["ORG-hand.L"]
+        hb = R["rig"].matrix_world @ pb.tail
+        camera(sc, (hb.x + 0.85, hb.y - 0.95, hb.z + 0.12), (hb.x, hb.y, hb.z - 0.05), lens=75, name="camH")
+        out[f"hand_{shp}"] = render_still(sc, os.path.join(OUT, f"rig2_hand_{shp}.png"))
+    return out
+
+
+def anim_test(R, path=None):
+    """~4 s: look around + blink, anticipation crouch, spring into the 'ta-da' salute, land, hold"""
+    sc = stage(R, ((2.4, -7.6, 1.55), (0.05, 0, 1.75), 36))
+    rig = R["rig"]
+    if rig.animation_data:
+        rig.animation_data_clear()
+    reset_pose(R)
+    arms_rest = lambda f: [rot(R, f"upper_arm_fk.{s}", 0, 0, sx * 8, frame=f) or rot(R, f"forearm_fk.{s}", 8, 0, 0, frame=f)
+                           for s, sx in (("L", 1), ("R", -1))]
+    legs = lambda f, th=0, sh=0: [rot(R, f"thigh_fk.{s}", -th, 0, 0, frame=f) or rot(R, f"shin_fk.{s}", sh, 0, 0, frame=f)
+                                  for s in ("L", "R")]
+    key = lambda f, b, x=0, y=0, z=0: rot(R, b, x, y, z, frame=f)
+    # 1: idle
+    arms_rest(1); legs(1); key(1, "head"); key(1, "chest"); move_world(R, "torso", 0, frame=1)
+    for s in ("L", "R"):
+        hand_shape(R, s, "relax", frame=1)
+    set_face(R, "grin", frame=1, look=(0, 0), blink=0)
+    # look left, blink, look right
+    key(12, "head", 0, -16, 0); set_face(R, "grin", frame=12, look=(-9, 0), blink=0)
+    set_face(R, "grin", frame=17, look=(-9, 0), blink=1); set_face(R, "grin", frame=20, look=(-9, 0), blink=0)
+    key(26, "head", 0, 16, 3); set_face(R, "grin", frame=26, look=(9, -1), blink=0)
+    arms_rest(26); legs(26); move_world(R, "torso", 0, frame=26); key(26, "chest")
+    # anticipation crouch
+    move_world(R, "torso", -0.16, frame=36); legs(36, 38, 70); key(36, "chest", 18, 0, 0); key(36, "head", -8, 0, 0)
+    for s, sx in (("L", 1), ("R", -1)):
+        rot(R, f"upper_arm_fk.{s}", -35, 0, sx * 14, frame=36); rot(R, f"forearm_fk.{s}", 25, 0, 0, frame=36)
+        hand_shape(R, s, "fist", frame=36)
+    set_face(R, "focus", frame=36, look=(0, -1))
+    # spring up: arms fly up, legs straight, 'whoa'
+    move_world(R, "torso", 0.26, frame=43); legs(43, 0, 0); key(43, "chest", -6, 0, 0); key(43, "head", 6, 0, 0)
+    for s, sx in (("L", 1), ("R", -1)):
+        rot(R, f"upper_arm_fk.{s}", 0, 0, sx * 150, frame=43); rot(R, f"forearm_fk.{s}", 10, 0, 0, frame=43)
+        hand_shape(R, s, "open", frame=43)
+    set_face(R, "whoa", frame=43, look=(0, -2))
+    # land with a squash, then settle into the salute
+    move_world(R, "torso", -0.07, frame=50); legs(50, 18, 32); key(50, "chest", 6, 0, 0)
+    set_face(R, "grin", frame=50, look=(0, 0))
+    move_world(R, "torso", 0, frame=56); legs(56); key(56, "chest", -3, 0, 0); key(56, "head", 0, 0, -8)
+    set_face(R, "grin", frame=66, look=(3, -1), blink=0); set_face(R, "grin", frame=69, look=(3, -1), blink=1)
+    set_face(R, "grin", frame=72, look=(3, -1), blink=0)
+    key(80, "head", 0, 6, 8); set_face(R, "grin", frame=80, look=(6, -2))
+    key(98, "head", 0, 6, 8)
+    for s, sx in (("L", 1), ("R", -1)):
+        rot(R, f"upper_arm_fk.{s}", 0, 0, sx * 150, frame=98)
+    n = 98
+    path = path or os.path.join(OUT, "gabby_rig_anim.mp4")
+    t = render_clip(sc, path, 1, n)
+    return dict(clip=path, frames=n, render_s=t, sec_per_frame=round(t / n, 2))
+
+
+def refit_cloth(R):
+    """re-run the clothing weight transfer on an existing build (after code changes)"""
+    rig, sc = R["rig"], R["sc"]
+    skin, hoodie, shorts = (sc.objects[f"{rig['who']}_{n}"] for n in ("skin", "hoodie", "shorts"))
+    sh = rig.data.bones["ORG-upper_arm.L"].head_local
+    x_off = rig.location.x
+    shx = abs(sh.x)
+    return [transfer_weights(skin, hoodie, x_off=0.0, core_x=shx * 0.7, torso=(shx * 0.92, sh.z - 0.03)),
+            transfer_weights(skin, shorts, x_off=0.0, core_x=shx * 0.7)]
