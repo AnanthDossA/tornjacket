@@ -1,0 +1,123 @@
+{
+  "status": "FINAL - locked by the owner on 2026-11-06. Do not change any of this without the owner's explicit OK.",
+  "reference_sheet": "concept/FINAL_characters.png (source: concept/teens_sheet.py, style switches SH_STYLE='base', GB_STYLE='base')",
+  "style": "2D comic look: bold dark ink outlines (#1b1418, ~4.5px at sheet scale), flat colours, halftone-dot shadows (gabby_sheet.HALFTONE=True), light from the upper left, organic hands (4 fingers + thumb, nails, lighter palms).",
+  "shirley": {
+    "role": "elder sister, ~16, the sensible one; a modern Indian teen girl who likes fitted modern clothes",
+    "never": [
+      "no bindi",
+      "no makeup look / no lipstick",
+      "not an adult",
+      "not a long/elongated face"
+    ],
+    "face": "oval, tapering to a small soft chin; kept short top-to-bottom; small gap between nose and mouth; almond eyes with big dark-brown irises and natural lashes; soft thin brows; small nose; small closed smile; faint blush",
+    "hair": "black short bob to the jaw with a wispy pointed fringe down to the brows, bob side panels over the cheeks, small ears peeking; green 5-petal flower hair clip on her right (screen-left) side; blue-grey shine arc",
+    "outfit": "fitted lilac zip hoodie, hood down behind the neck, half-zipped over a white tee with a little planet print, white drawstrings, ribbed cuffs and hip-length ribbed hem; slim blue jeans; white sneakers; gold bangle on the relaxed wrist",
+    "build": "slim, fitted silhouette",
+    "default_pose": "standing, one arm relaxed, other hand (fist) on hip",
+    "expressions": [
+      "calm (default)",
+      "unimpressed (half lids)",
+      "surprised",
+      "smile"
+    ],
+    "voice": "bf_emma, speed ~0.92 (placeholder until real voices)",
+    "colours": {
+      "skin": [
+        "#8c5b3d",
+        "#5f3c27"
+      ],
+      "palm": [
+        "#ad7653",
+        "#7d5136"
+      ],
+      "hair": [
+        "#17121a",
+        "#0b080d"
+      ],
+      "shine": "#5d6b8a",
+      "clip": [
+        "#3fae5a",
+        "#24803c"
+      ],
+      "gold": [
+        "#ecc65e",
+        "#b48c2c"
+      ],
+      "lips": "#6e3a2e",
+      "iris": "#3e2416",
+      "zh": [
+        "#b583c9",
+        "#83579a"
+      ],
+      "zh_dk": "#9b6bb0",
+      "tee": "#f6f3ec",
+      "jeans": [
+        "#4d6ea6",
+        "#344d7d"
+      ],
+      "shoe": [
+        "#f4f3ee",
+        "#c6c4bb"
+      ]
+    }
+  },
+  "gabby": {
+    "role": "younger brother, ~14, gymnastics/fitness freak; loud, bouncy, optimistic, gullible; can't pass a wall without a handstand",
+    "never": [
+      "not chubby",
+      "no beard/stubble",
+      "not an adult"
+    ],
+    "face": "round like the reference but LEAN: widest at the eyes, clean taper to the chin, no puffy cheeks; fairly narrow; short top-to-bottom; small nose-to-mouth gap; prominent ears; almond eyes that squint up when he grins; small broad nose; wide smile showing the upper teeth with small dimples",
+    "skin": "a little fairer than Shirley (not too fair)",
+    "hair": "thick short wavy black hair with a wavy fringe edge and short sideburns, blue-grey shine curls",
+    "outfit": "red hoodie, hood down behind the neck, white drawstrings, kangaroo pocket, ribbed hem, sleeves pushed up to the elbows; frayed light-denim shorts with chalk handprints; white wrist tape; chalky hands; plaster on one knee; white sneakers with red soles and white socks",
+    "build": "lean, athletic, slim",
+    "signature_poses": [
+      "gymnast 'ta-da' salute (arms up in a V, open palms, chalk puffs)",
+      "handstand"
+    ],
+    "expressions": [
+      "grin (default)",
+      "focus / before a flip (tongue out)",
+      "whoa!",
+      "dizzy / after a flip (spiral eyes)"
+    ],
+    "voice": "am_puck, speed ~1.05-1.1 (placeholder until real voices)",
+    "colours": {
+      "skin": [
+        "#a46f4b",
+        "#774d31"
+      ],
+      "palm": [
+        "#c38f69",
+        "#926242"
+      ],
+      "hair": [
+        "#17121a",
+        "#0b080d"
+      ],
+      "shine": "#5d6b8a",
+      "hood": [
+        "#e5483b",
+        "#ad2f28"
+      ],
+      "hood_dk": "#c23a31",
+      "shorts": [
+        "#9fb1c6",
+        "#6f8299"
+      ],
+      "tape": "#f4f4ee",
+      "shoe": [
+        "#f2f1ea",
+        "#c3c1b8"
+      ],
+      "sole": "#d84a3c",
+      "iris": "#3e2416",
+      "mouth": "#3b1519",
+      "tongue": "#d0625b"
+    }
+  },
+  "privacy": "This repo is public: never commit the owner's personal reference photos or say whose likeness the designs are based on."
+}

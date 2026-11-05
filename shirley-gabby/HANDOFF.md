@@ -2,6 +2,20 @@
 
 Written at the end of the first build session (2026-11-04) so a new conversation can continue without the old chat history.
 
+## 0. LOCKED: FINAL CHARACTER DESIGNS (owner-approved 2026-11-06), read before touching any character
+**Shirley and Gabby are final. Never drift from these details, and never change them without the owner's explicit OK.**
+Full spec with exact colours: `concept/characters_final.json`. Reference image: `concept/FINAL_characters.png` (drawn by `concept/teens_sheet.py`, default styles). Style: 2D comic, bold ink, flat colour, halftone shadows.
+- **Shirley (~16, elder sister, sensible, modern Indian teen):**
+  - Face and hair: oval face tapering to a small soft chin, kept short, small nose-to-mouth gap, almond eyes with big dark irises, soft thin brows, small closed smile. Black jaw-length bob with a wispy fringe and a **green flower clip**.
+  - Outfit: **fitted lilac zip hoodie** (hood down, half-zipped over a white tee with a little planet print), slim blue jeans, white sneakers, gold bangle. Slim.
+  - Never: **no bindi**, no makeup look, not an adult, not a long face.
+- **Gabby (~14, younger brother, gymnastics/fitness freak):**
+  - Face and hair: **round but lean face (NOT chubby)**, widest at the eyes, clean taper to the chin, narrow-ish, short, prominent ears, smiling squinty almond eyes, wide upper-teeth grin with dimples. Skin a little fairer than Shirley's (not too fair). Thick short wavy black hair.
+  - Outfit: **red hoodie, hood down** (strings, pocket, sleeves pushed up), frayed denim shorts with chalk handprints, white wrist tape, chalky hands, knee plaster, white sneakers with red soles. Lean, athletic.
+  - Signature poses: the "ta-da" salute and a handstand.
+- Earlier designs (the adult Gabby and Shirley sheets, the chubby or long faces, kurti outfits, `blender/sg3d.py` 3D Gabby) are **superseded** and kept only as reusable code (drawing kit, organic hands, rig and engine).
+- The repo is public: never commit the owner's reference photos.
+
 ## 1. The project
 - **Owner:** the Torn Jacket channel owner (India). Wants a premium animated series, aiming toward **Rick and Morty / Inside Job quality**, for YouTube now and possibly longer-form (Netflix-style, 11–22 min) later.
 - **Show:** *Shirley & Gabby* (working title, the owner's own invention). **Pure fiction: no real-world news or facts.** Absurd adventures in weird worlds.

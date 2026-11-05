@@ -15,3 +15,5 @@ Separate from the Torn Jacket engine (which is untouched). Fictional cartoon ser
 
 ## Status / next
 Not yet a general engine: scenes are hand-scripted. Next: scene script format, set kit, action library (run/sit/jump), props, front/back views, creature templates.
+
+> **Characters are FINAL (2026-11-06):** see `concept/FINAL_characters.png` and `concept/characters_final.json`; the locked rules are at the top of `HANDOFF.md`.
