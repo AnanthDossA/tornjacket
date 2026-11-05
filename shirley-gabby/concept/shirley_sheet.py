@@ -123,34 +123,36 @@ def head(S, x, y, s=1.0, expr="deadpan", lw=4):
     e = EXPR[expr]
     g_open(S, x, y, s)
     sk, sd = Q["skin"]
-    # pencil through a high bun (pencil first, bun covers its middle)
-    pencil(S, -70, -250, 96, -150)
-    cel(S, gs.fuzzy(10, -196, 54, 14, 0.06), Q["hair"][0], Q["hair"][1], -10, -8, lw)
-    for d in ("M-26,-196 C-20,-232 36,-238 46,-206", "M-14,-180 C-6,-212 34,-214 36,-188", "M-30,-172 C10,-150 50,-160 58,-186"):
-        line(S, d, 3, Q["hi"], 0.9)
-    # back hair (nape) + ears with mini jhumkas
-    fill(S, "M-98,-90 C-106,-172 106,-172 98,-90 C102,-40 98,0 90,20 L-90,20 C-98,0 -102,-40 -98,-90 Z", Q["hair"][1], lw=lw)
-    for sx in (-1, 1):
-        cel(S, ell(90 * sx, -2, 13, 22), sk, sd, -4 * sx, -3, lw)
-        jhumka(S, 90 * sx, 18)
+    # short blunt bob ("Dora cut"): back mass to the jaw, cut straight
+    bob = "M-102,-100 C-114,-184 114,-184 102,-100 C110,-40 112,20 106,62 Q0,72 -106,62 C-112,20 -110,-40 -102,-100 Z"
+    cel(S, bob, Q["hair"][0], Q["hair"][1], -10, -8, lw)
     hc = cel(S, HEAD, sk, sd, -14, -10, lw)
+    # screen-right side is tucked behind the ear; pencil rests behind that ear (ear covers its middle)
+    pencil(S, 102, -116, 124, 30, 11)
+    cel(S, ell(99, -4, 14, 23), sk, sd, 4, -3, lw)
+    line(S, "M95,-16 Q106,-4 97,10", 2.5, INK, 0.6)
+    jhumka(S, 99, 18)
     S.add(f'<g clip-path="url(#{hc})">'
           f'<path d="{ell(-54, 32, 24, 13)}" fill="{Q["blush"]}" opacity="0.24"/><path d="{ell(54, 32, 24, 13)}" fill="{Q["blush"]}" opacity="0.24"/>'
-          f'<path d="M-80,-110 L80,-110 L80,-92 Q0,-80 -80,-92 Z" fill="{sd}" opacity="0.5"/></g>')
-
-    # sleek front hair, middle part slightly off-centre, face-framing strands
-    for sx in (-1, 1):
-        px = 8
-        d = (f"M{px},-156 C{px + sx * 54},-160 {96 * sx},-130 {98 * sx},-70 C{100 * sx},-30 {98 * sx},6 {88 * sx},38 "
-             f"C{84 * sx},6 {82 * sx},-28 {78 * sx},-62 C{70 * sx},-100 {px + sx * 34},-116 {px},-118 Z")
-        cel(S, d, Q["hair"][0], Q["hair"][1], -6 * sx, -6, lw)
-        line(S, f"M{px + sx * 20},-146 C{60 * sx},-136 {84 * sx},-108 {88 * sx},-70", 2.5, Q["hi"], 0.8)
+          f'<path d="M-90,-84 L90,-84 L90,-70 Q0,-62 -90,-70 Z" fill="{sd}" opacity="0.5"/></g>')
+    # screen-left side panel falls straight past the cheek to the jaw
+    side = "M-98,-96 L-74,-96 C-76,-40 -78,10 -78,58 L-106,62 C-110,10 -106,-50 -98,-96 Z"
+    cel(S, side, Q["hair"][0], Q["hair"][1], -4, -4, lw)
+    line(S, "M-88,-60 L-90,40", 2, Q["hi"], 0.7)
+    # tucked side: a short strand sweeping back over the ear
+    cel(S, "M74,-98 L104,-100 C110,-74 108,-46 104,-30 C96,-52 88,-68 74,-82 Z", Q["hair"][0], Q["hair"][1], 3, -3, lw)
+    # straight blunt bangs, a few tiny notches on the cut line
+    notch = " ".join(f"L{x},{-78 + (4 if i % 2 else 0)}" for i, x in enumerate(range(88, -91, -12)))
+    bangs = f"M-96,-100 C-94,-152 -44,-166 0,-166 C44,-166 94,-152 96,-100 L94,-78 {notch} L-96,-78 Z"
+    cel(S, bangs, Q["hair"][0], Q["hair"][1], -8, -6, lw)
+    for x in (-60, -30, 0, 30, 60):
+        line(S, f"M{x * 0.8},-150 Q{x},-120 {x},-84", 1.8, Q["hair"][1], 0.9)
+    line(S, "M-60,-150 C-30,-162 30,-162 60,-150", 3, Q["hi"], 0.85)  # burgundy sheen
     # face
     for sx in (-1, 1):
         eye(S, sx, e)
     for sx in (-1, 1):
         brow(S, sx, e)
-    fill(S, ell(0, -56, 3.6, 3.6), "#7a1e30")  # small bindi
     nose = "M-4,-4 C-6,14 -14,22 -12,30 C-8,38 8,38 12,30 C14,22 6,14 4,-4"
     cel(S, nose + " Z", sk, sd, -4, -4, 0, stroke=False)
     line(S, "M-4,-4 C-6,14 -14,22 -12,30 C-8,38 8,38 12,30", 3.2)
@@ -295,7 +297,7 @@ def sheet(path_svg):
     for gy in range(0, H, 40):
         S.add(f'<line x1="0" y1="{gy}" x2="{W}" y2="{gy}" stroke="#e2d6c9" stroke-width="1"/>')
     text(S, 60, 86, "SHIRLEY", 64, 800)
-    text(S, 64, 126, "Shirley &amp; Gabby · character sheet · concept v2", 24, 400, "#5a4a3c")
+    text(S, 64, 126, "Shirley &amp; Gabby · character sheet · concept v3", 24, 400, "#5a4a3c")
     hx, hy, hs = 640, 430, 1.1
     body(S, hx, hy, hs)
     head(S, hx, hy, hs, "deadpan")
@@ -323,10 +325,10 @@ def sheet(path_svg):
     notes = [
         "~29, Indian. Gabby's elder sister. Sharp, deadpan, permanently tired; secretly the bravest.",
         "Modern and science-minded: questions everything, tablet full of graphs, smartwatch.",
-        "Soft round face, high bun with a pencil through it, sleek face-framing strands, burgundy sheen.",
+        "Soft round face. Short blunt bob with straight bangs (\u201cDora cut\u201d), pencil tucked behind her ear.",
         "Makeup: winged liner, groomed arched brows, berry lips, soft blush, berry nail polish.",
         "Round gold-rim glasses (pushes them up at the rim when she's about to be right).",
-        "Small bindi, gold nose pin, mini gold jhumkas, benzene-ring pendant.",
+        "Gold nose pin, mini gold jhumkas, benzene-ring pendant. Burgundy sheen in her hair.",
         "Mustard satin shirt (rolled sleeves) tucked into plum high-waist wide-leg trousers.",
         "Moves minimally and slowly; barely gestures; rolls her eyes. Voice: bf_emma.",
     ]
