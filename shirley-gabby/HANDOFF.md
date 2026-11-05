@@ -110,6 +110,11 @@ The owner chose **toon 3D** (after seeing both tests and asking how Rick and Mor
   - Mouth shapes swapped from the approved drawn mouths, for lip-sync.
   - Proper finger bones.
   - Do Gabby first, then Shirley. The locked designs must not change.
+- **2026-11-06 progress: Gabby is rigged** (`blender/rig3d.py`, `build_rigged("gabby")`, about 107 s).
+  - Skeleton: the Rigify human metarig with face bones removed, fitted to the sheet joints with chains kept connected, then generated (69 DEF bones). FK posing via `fk(R)` + `rot(R, "upper_arm_fk.L", x, y, z)` (z = raise the arm sideways).
+  - Meshes: one fused skin (about 76k polys, voxel remesh 0.0075) plus fused hoodie and shorts, all auto-weighted. `keep_torso_off_arms()` stops the hoodie sides following the arms.
+  - Face: 3D almond eyes (iris drawn in the shader, steered by object props `look_x`/`look_z`; shape keys blink, squint, wide), 3D brows, mouth decal layers per expression plus a static nose/blush decal. `set_face(R, expr, look=, blink=)`.
+  - To do: finger/hand quality (still small mitts), slight hoodie stretch at the armpits, Shirley's rigged build (her bob, jeans, full sleeves), lip-sync mouth set, an animation clip.
 - PC file transfer: `device_commit_files` will not overwrite an existing file, so commit to a new name and `cp` it over (check the md5).
 
 ## 8. Ideas parked for later
