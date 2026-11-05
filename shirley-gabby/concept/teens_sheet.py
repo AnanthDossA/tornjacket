@@ -24,63 +24,80 @@ def skin_hands(c):
     gs.P["skin"], gs.P["palm"] = c["skin"], c["palm"]
 
 
-# ------------------------------------------------------------------ faces (origin = face centre)
-FACE = ("M-92,-84 C-98,-154 98,-154 92,-84 C102,-34 102,20 88,62 C74,102 40,122 0,124 "
-        "C-40,122 -74,102 -88,62 C-102,20 -102,-34 -92,-84 Z")
+# ------------------------------------------------------------------ faces (origin = face centre), proportions from the reference
+# Shirley: longer oval face tapering to a small soft chin. Gabby: rounder, full cheeks, big forehead, prominent ears.
+FACE_SH = ("M-80,-98 C-86,-162 86,-162 80,-98 C90,-44 88,14 76,58 C62,104 32,138 0,142 "
+           "C-32,138 -62,104 -76,58 C-88,14 -90,-44 -80,-98 Z")
+FACE_GB = ("M-90,-92 C-98,-162 98,-162 90,-92 C106,-40 110,16 100,58 C88,100 50,126 0,128 "
+           "C-50,126 -88,100 -100,58 C-110,16 -106,-40 -90,-92 Z")
+FACE = FACE_GB
 
 
-def eye(S, c, cx, look=(0, 0), lid=0.0, lashes=False, spiral=False, ry=36, rx=28):
-    cy = -12
-    d = ell(cx, cy, rx, ry)
+def almond(cx, cy, rx, ry, squint=0.0):
+    """almond eye outline; squint pushes the lower lid up (smiling eyes)"""
+    lo = ry * (0.9 - 1.1 * squint)
+    return (f"M{cx - rx},{cy + 2} C{cx - rx * 0.6},{cy - ry * 1.25} {cx + rx * 0.55},{cy - ry * 1.3} {cx + rx},{cy - 2} "
+            f"C{cx + rx * 0.6},{cy + lo} {cx - rx * 0.6},{cy + lo} {cx - rx},{cy + 2} Z")
+
+
+def eye(S, c, cx, cy=-6, rx=27, ry=19, look=(0, 0), lid=0.0, squint=0.0, lashes=False, spiral=False, wide=False):
+    if wide:
+        ry *= 1.45
+    d = almond(cx, cy, rx, ry, squint)
     cid = S.uid()
     S.defs.append(f'<clipPath id="{cid}"><path d="{d}"/></clipPath>')
     S.add(f'<path d="{d}" fill="{W_}"/>')
     S.add(f'<g clip-path="url(#{cid})">')
     if spiral:
-        pts = " ".join(f"{cx + 1.7 * t * math.cos(t):.1f},{cy + 1.7 * t * math.sin(t):.1f}" for t in [k * 0.35 for k in range(40)])
+        pts = " ".join(f"{cx + 1.5 * t * math.cos(t):.1f},{cy - 4 + 1.5 * t * math.sin(t):.1f}" for t in [k * 0.35 for k in range(36)])
         S.add(f'<polyline points="{pts}" fill="none" stroke="{INK}" stroke-width="3"/>')
     else:
         lx, ly = look
-        S.add(f'<path d="{ell(cx + lx, cy + 5 + ly, 16, 18)}" fill="{c["iris"]}"/>')
-        S.add(f'<path d="{ell(cx + lx, cy + 5 + ly, 8, 9)}" fill="{INK}"/>')
-        S.add(f'<path d="{ell(cx + lx - 6, cy - 2 + ly, 4.5, 5)}" fill="#fff"/><path d="{ell(cx + lx + 6, cy + 13 + ly, 2, 2)}" fill="#fff"/>')
+        ir = ry * 0.74 if not wide else ry * 0.5
+        S.add(f'<path d="{ell(cx + lx, cy - 2 + ly, ir, ir + 1)}" fill="{c["iris"]}"/>')
+        S.add(f'<path d="{ell(cx + lx, cy - 2 + ly, ir * 0.5, ir * 0.55)}" fill="{INK}"/>')
+        S.add(f'<path d="{ell(cx + lx - 5, cy - 7 + ly, 3.8, 4.2)}" fill="#fff"/><path d="{ell(cx + lx + 5, cy + 4 + ly, 1.8, 1.8)}" fill="#fff"/>')
     if lid:
-        yl = cy - ry + 2 * ry * lid
+        yl = cy - ry * 1.1 + 2 * ry * lid
         S.add(f'<path d="M{cx - 40},{cy - 60} L{cx + 40},{cy - 60} L{cx + 40},{yl} L{cx - 40},{yl} Z" fill="{c["skin"][0]}"/>')
-        line(S, f"M{cx - 40},{yl} L{cx + 40},{yl}", 5)
+        line(S, f"M{cx - 40},{yl} L{cx + 40},{yl}", 4.5)
     S.add("</g>")
-    S.add(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="4"/>')
-    if not lid:
-        line(S, f"M{cx - rx + 3},{cy - 12} Q{cx},{cy - ry - 6} {cx + rx - 3},{cy - 12}", 5.5)
+    S.add(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="3.2" stroke-linejoin="round"/>')
+    if not lid:  # heavier upper lid line
+        line(S, f"M{cx - rx},{cy + 2} C{cx - rx * 0.6},{cy - ry * 1.25} {cx + rx * 0.55},{cy - ry * 1.3} {cx + rx},{cy - 2}", 5.5)
+    sd = 1 if cx > 0 else -1
+    line(S, f"M{cx - rx * 0.7},{cy - ry * 1.55} Q{cx},{cy - ry * 1.9} {cx + rx * 0.75},{cy - ry * 1.45}", 1.8, INK, 0.4)  # lid crease
+    if squint:
+        line(S, f"M{cx - rx * 0.6},{cy + ry * 1.2} Q{cx},{cy + ry * 0.9} {cx + rx * 0.6},{cy + ry * 1.2}", 2.2, INK, 0.5)  # cheek push
     if lashes:
-        sd = 1 if cx > 0 else -1
         for k in range(3):
-            ang = math.radians(-60 + 20 * k) if sd > 0 else math.radians(-120 - 20 * k)
-            bx, by = cx + rx * 0.82 * math.cos(ang), cy + ry * 0.82 * math.sin(ang)
-            line(S, f"M{bx:.1f},{by:.1f} l{7 * sd},{-6}", 2.6)
+            bx = cx + sd * rx * (0.45 + 0.2 * k)
+            by = cy - ry * (0.95 - 0.35 * k)
+            line(S, f"M{bx:.1f},{by:.1f} l{6 * sd},{-6}", 2.4)
 
 
-def brows(S, c, raise_=0, ang=0, thick=9):
+def brows(S, c, raise_=0, ang=0, thick=7, y0=-48, xo=62):
     for sx in (-1, 1):
-        xi, xo = 14 * sx, 70 * sx
-        yi, yo = -64 + raise_ + ang, -64 + raise_ - ang * 0.4
-        d = (f"M{xi},{yi - thick / 2} Q{(xi + xo) / 2},{min(yi, yo) - 15} {xo},{yo - 2} "
-             f"L{xo + 3 * sx},{yo + 3} Q{(xi + xo) / 2},{min(yi, yo) - 4} {xi},{yi + thick / 2} Z")
-        fill(S, d, c["hair"][0], lw=2)
+        xi, xe = 12 * sx, xo * sx
+        yi, ye = y0 + raise_ + ang, y0 + 4 + raise_ - ang * 0.4
+        d = (f"M{xi},{yi - thick / 2} Q{(xi + xe) / 2},{min(yi, ye) - 12} {xe},{ye - 1} "
+             f"L{xe + 2 * sx},{ye + 2} Q{(xi + xe) / 2},{min(yi, ye) - 4} {xi},{yi + thick / 2} Z")
+        fill(S, d, c["hair"][0], lw=1.6)
 
 
-def nose(S, c):
-    d = "M-4,-2 C-7,14 -16,20 -13,30 C-9,39 9,39 13,30 C16,20 7,14 4,-2"
-    cel(S, d + " Z", *c["skin"], -4, -4, 0, stroke=False)
-    line(S, d, 3.5)
-    line(S, "M-10,30 Q-6,26 -2,31 M3,31 Q7,26 11,30", 2.2)
+def nose(S, c, w=1.0, y=0):
+    d = f"M{-3 * w},{6 + y} C{-5 * w},{20 + y} {-13 * w},{24 + y} {-11 * w},{33 + y} C{-7 * w},{40 + y} {7 * w},{40 + y} {11 * w},{33 + y}"
+    cel(S, f"M{-3 * w},{6 + y} C{-5 * w},{20 + y} {-13 * w},{24 + y} {-11 * w},{33 + y} C{-7 * w},{40 + y} {7 * w},{40 + y} {11 * w},{33 + y} "
+           f"C{13 * w},{24 + y} {5 * w},{20 + y} {3 * w},{6 + y} Z", *c["skin"], -3, -3, 0, stroke=False)
+    line(S, d, 3.2)
+    line(S, f"M{-8 * w},{33 + y} Q{-5 * w},{29 + y} {-2 * w},{34 + y} M{2 * w},{34 + y} Q{5 * w},{29 + y} {8 * w},{33 + y}", 2)
 
 
-# ---------------- Shirley's head: bob with a wispy fringe + green flower clip
-SH_EXPR = {"calm": dict(raise_=0, ang=0, lid=0.18, look=(2, 2), mouth="soft"),
-           "unimpressed": dict(raise_=4, ang=-2, lid=0.46, look=(6, 2), mouth="flat"),
-           "surprised": dict(raise_=-14, ang=-6, lid=0.0, look=(0, -2), mouth="o"),
-           "smile": dict(raise_=-4, ang=-4, lid=0.12, look=(0, 2), mouth="smile")}
+# ---------------- Shirley's head: short bob, wispy fringe, green flower clip
+SH_EXPR = {"calm": dict(raise_=0, ang=0, look=(2, 1), mouth="soft"),
+           "unimpressed": dict(raise_=4, ang=-2, lid=0.45, look=(6, 2), mouth="flat"),
+           "surprised": dict(raise_=-12, ang=-4, look=(0, -1), mouth="o", wide=True),
+           "smile": dict(raise_=-3, ang=-3, look=(0, 1), mouth="smile", squint=0.25)}
 
 
 def flower(S, x, y, r=16):
@@ -93,79 +110,86 @@ def flower(S, x, y, r=16):
 def shirley_head(S, x, y, s=1.0, expr="calm", lw=4.5):
     c, e = SH, SH_EXPR[expr]
     g_open(S, x, y, s)
-    bob = "M-108,-96 C-118,-186 118,-186 108,-96 C116,-40 116,20 110,66 Q60,80 0,78 Q-60,80 -110,66 C-116,20 -116,-40 -108,-96 Z"
+    bob = "M-100,-104 C-110,-190 110,-190 100,-104 C108,-46 108,14 102,62 Q56,76 0,74 Q-56,76 -102,62 C-108,14 -108,-46 -100,-104 Z"
     cel(S, bob, *c["hair"], -10, -8, lw)
-    cel(S, FACE, *c["skin"], -14, -10, lw)
-    S.add(f'<path d="{ell(-56, 34, 20, 11)}" fill="#c4505c" opacity="0.18"/><path d="{ell(56, 34, 20, 11)}" fill="#c4505c" opacity="0.18"/>')
-    for sx in (-1, 1):  # side panels of the bob over the cheeks
-        cel(S, f"M{-100 * sx},-96 L{-78 * sx},-96 C{-82 * sx},-40 {-86 * sx},10 {-90 * sx},66 L{-110 * sx},66 C{-114 * sx},10 {-110 * sx},-50 {-100 * sx},-96 Z",
-            *c["hair"], -4 * sx, -4, lw)
-    # wispy fringe: uneven pointed strands
-    tips = [(-92, -70), (-74, -58), (-58, -72), (-40, -60), (-22, -74), (-4, -62), (14, -76), (32, -62), (50, -74), (68, -60), (86, -72), (98, -88)]
-    d = "M-100,-96 C-100,-150 -50,-170 0,-170 C50,-170 100,-150 100,-96 " + " ".join(
-        f"L{tx},{ty} L{tx - 9},{ty - 14}" for tx, ty in reversed(tips)) + " Z"
+    for sx in (-1, 1):  # small ears just peeking out of the bob
+        cel(S, ell(84 * sx, 0, 11, 19), *c["skin"], -3 * sx, -3, lw)
+    cel(S, FACE_SH, *c["skin"], -12, -10, lw)
+    S.add(f'<path d="{ell(-46, 40, 18, 10)}" fill="#c4505c" opacity="0.16"/><path d="{ell(46, 40, 18, 10)}" fill="#c4505c" opacity="0.16"/>')
+    for sx in (-1, 1):  # bob side panels
+        cel(S, f"M{-94 * sx},-104 L{-74 * sx},-104 C{-76 * sx},-60 {-80 * sx},-24 {-82 * sx},-10 C{-84 * sx},20 {-88 * sx},40 {-92 * sx},62 L{-104 * sx},62 "
+               f"C{-108 * sx},14 {-106 * sx},-50 {-94 * sx},-104 Z", *c["hair"], -4 * sx, -4, lw)
+    # wispy fringe down to the brows
+    tips = [(-82, -62), (-66, -54), (-50, -64), (-34, -52), (-18, -66), (-2, -54), (14, -66), (30, -54), (46, -64), (62, -52), (78, -62), (90, -80)]
+    d = "M-94,-104 C-94,-156 -46,-174 0,-174 C46,-174 94,-156 94,-104 " + " ".join(
+        f"L{tx},{ty} L{tx - 8},{ty - 13}" for tx, ty in reversed(tips)) + " Z"
     cel(S, d, *c["hair"], -8, -6, lw)
-    for x0 in (-60, -20, 20, 60):
-        line(S, f"M{x0 * 0.8},-156 Q{x0},-120 {x0 + 4},-84", 2, c["hair"][1])
-    line(S, "M-56,-150 C-24,-164 24,-164 56,-150", 3, c["shine"], 0.9)
-    flower(S, -66, -120, 23)
-    eye_kw = dict(look=e["look"], lid=e["lid"], lashes=True)
+    for x0 in (-56, -18, 18, 56):
+        line(S, f"M{x0 * 0.8},-158 Q{x0},-124 {x0 + 4},-76", 2, c["hair"][1])
+    line(S, "M-52,-156 C-22,-168 22,-168 52,-156", 3, c["shine"], 0.9)
+    flower(S, -60, -124, 22)
     for sx in (-1, 1):
-        eye(S, c, 40 * sx, **eye_kw)
-    brows(S, c, e["raise_"], e["ang"], 7)
-    nose(S, c)
+        eye(S, c, 37 * sx, -8, 30, 22, look=e["look"], lid=e.get("lid", 0), squint=e.get("squint", 0), lashes=True, wide=e.get("wide", False))
+    brows(S, c, e["raise_"], e["ang"], 6, -46, 62)
+    nose(S, c, 0.85, 4)
     m = e["mouth"]
     if m == "o":
-        cel(S, ell(0, 80, 14, 18), "#3b1519", "#3b1519", 0, 0, 3.5)
+        cel(S, ell(0, 92, 11, 14), "#3b1519", "#3b1519", 0, 0, 3.2)
     elif m == "flat":
-        line(S, "M-22,80 Q0,82 22,78", 4.5)
+        line(S, "M-17,92 Q0,94 17,90", 4)
     else:
-        sm = 10 if m == "smile" else 5
-        cel(S, f"M-28,74 Q0,{74 + sm + 10} 28,74 Q0,{74 + sm} -28,74 Z", c["lips"], c["lips"], 0, 0, 3.5)
-        line(S, f"M-32,70 q-3,4 0,8 M32,70 q3,4 0,8", 2.2, INK, 0.6)
+        sm = 7 if m == "smile" else 3
+        cel(S, f"M-22,88 Q0,{90 + sm + 9} 22,88 Q0,{90 + sm} -22,88 Z", c["lips"], c["lips"], 0, 0, 3)
+        line(S, f"M-22,88 Q0,{84 - sm} 22,88", 3)
+        line(S, f"M-26,85 q-3,3 0,7 M26,85 q3,3 0,7", 2, INK, 0.5)
+    line(S, "M-10,112 Q0,116 10,112", 2, INK, 0.35)  # small chin
     g_close(S)
 
 
-# ---------------- Gabby's head: thick short wavy hair, big ears, toothy grin
-GB_EXPR = {"grin": dict(raise_=-6, ang=-6, look=(3, 0), mouth="grin"),
-           "focus": dict(raise_=6, ang=14, look=(0, -2), mouth="tongue", lid=0.3),
+# ---------------- Gabby's head: round with full cheeks, big ears, short thick wavy hair, wide toothy smile
+GB_EXPR = {"grin": dict(raise_=-6, ang=-4, look=(2, 0), mouth="grin", squint=0.35),
+           "focus": dict(raise_=6, ang=12, look=(0, -1), mouth="tongue", lid=0.32),
            "dizzy": dict(raise_=-10, ang=-8, mouth="wobble", spiral=True),
-           "whoa": dict(raise_=-18, ang=-8, look=(0, 0), mouth="o")}
+           "whoa": dict(raise_=-16, ang=-6, look=(0, 0), mouth="o", wide=True)}
 
 
 def gabby_head(S, x, y, s=1.0, expr="grin", lw=4.5):
     c, e = GB, GB_EXPR[expr]
     g_open(S, x, y, s)
     for sx in (-1, 1):
-        cel(S, ell(98 * sx, 0, 22, 30), *c["skin"], -6 * sx, -4, lw)
-        line(S, f"M{92 * sx},-12 Q{106 * sx},2 {94 * sx},18", 3, INK, 0.7)
-    cel(S, FACE, *c["skin"], -14, -10, lw)
-    hair = ("M-98,-66 C-112,-150 -40,-190 10,-182 C74,-176 114,-142 98,-66 "
-            "L86,-74 Q72,-96 58,-80 Q44,-102 28,-84 Q12,-106 -6,-86 Q-24,-104 -40,-84 Q-56,-100 -72,-80 Q-86,-94 -98,-66 Z")
+        cel(S, ell(100 * sx, 8, 22, 32), *c["skin"], -6 * sx, -4, lw)
+        line(S, f"M{94 * sx},-6 Q{108 * sx},8 {96 * sx},26", 3, INK, 0.7)
+    cel(S, FACE_GB, *c["skin"], -14, -10, lw)
+    if e["mouth"] == "grin":  # cheeks bunch up when he smiles
+        line(S, "M-70,40 Q-80,58 -66,74 M70,40 Q80,58 66,74", 2.6, INK, 0.45)
+    hair = ("M-96,-74 C-110,-156 -40,-196 10,-188 C76,-182 114,-148 96,-74 "
+            "L84,-84 Q72,-104 58,-88 Q44,-110 28,-92 Q12,-114 -6,-94 Q-24,-112 -40,-92 Q-56,-108 -72,-88 Q-86,-102 -96,-74 Z")
     cel(S, hair, *c["hair"], -8, -6, lw)
-    for d in ("M-60,-150 q10,-14 24,-6", "M-20,-166 q12,-12 26,-2", "M24,-160 q12,-10 24,0", "M58,-140 q10,-8 18,4", "M-84,-110 q6,-12 18,-8"):
+    for d in ("M-60,-156 q10,-14 24,-6", "M-20,-172 q12,-12 26,-2", "M24,-166 q12,-10 24,0", "M58,-146 q10,-8 18,4", "M-84,-116 q6,-12 18,-8"):
         line(S, d, 3, c["shine"], 0.85)
     for sx in (-1, 1):
-        fill(S, f"M{86 * sx},-80 L{100 * sx},-74 C{102 * sx},-56 {98 * sx},-44 {92 * sx},-36 C{90 * sx},-52 {88 * sx},-66 {86 * sx},-80 Z", c["hair"][0], lw=2)
+        fill(S, f"M{84 * sx},-88 L{98 * sx},-82 C{100 * sx},-62 {96 * sx},-48 {90 * sx},-40 C{88 * sx},-58 {86 * sx},-72 {84 * sx},-88 Z", c["hair"][0], lw=2)
     for sx in (-1, 1):
-        eye(S, c, 40 * sx, look=e.get("look", (0, 0)), lid=e.get("lid", 0), spiral=e.get("spiral", False), ry=37, rx=30)
-    brows(S, c, e["raise_"], e["ang"], 11)
-    nose(S, c)
+        eye(S, c, 40 * sx, -12, 32, 23, look=e.get("look", (0, 0)), lid=e.get("lid", 0), squint=e.get("squint", 0),
+            spiral=e.get("spiral", False), wide=e.get("wide", False))
+    brows(S, c, e["raise_"], e["ang"], 9, -54, 68)
+    nose(S, c, 1.25, 4)
     m = e["mouth"]
-    if m == "grin":
-        d = "M-50,60 Q0,72 50,60 Q44,112 0,114 Q-44,112 -50,60 Z"
+    if m == "grin":  # wide smile showing the upper teeth
+        d = "M-54,66 Q0,76 54,66 Q46,110 0,112 Q-46,110 -54,66 Z"
         cid = S.uid(); S.defs.append(f'<clipPath id="{cid}"><path d="{d}"/></clipPath>')
-        S.add(f'<path d="{d}" fill="{c["mouth"]}"/><g clip-path="url(#{cid})"><rect x="-60" y="54" width="120" height="22" fill="{W_}"/>'
-              f'<path d="{ell(0, 118, 28, 18)}" fill="{c["tongue"]}"/></g>')
+        S.add(f'<path d="{d}" fill="{c["mouth"]}"/><g clip-path="url(#{cid})"><rect x="-60" y="60" width="120" height="22" fill="{W_}"/>'
+              + "".join(f'<line x1="{x0}" y1="66" x2="{x0}" y2="82" stroke="{INK}" stroke-width="1.4" opacity="0.35"/>' for x0 in (-30, -10, 10, 30))
+              + f'<path d="{ell(0, 116, 26, 16)}" fill="{c["tongue"]}"/></g>')
         S.add(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="4.5" stroke-linejoin="round"/>')
-        line(S, "M-56,54 Q-60,62 -52,66 M56,54 Q60,62 52,66", 3)
+        line(S, "M-60,60 Q-64,68 -56,72 M60,60 Q64,68 56,72", 3)
     elif m == "tongue":
-        line(S, "M-30,80 Q0,86 30,78", 5)
-        cel(S, "M6,80 Q8,100 20,98 Q28,92 24,79 Z", c["tongue"], "#a84a44", -2, -2, 3)
+        line(S, "M-30,88 Q0,94 30,86", 5)
+        cel(S, "M6,88 Q8,108 20,106 Q28,100 24,87 Z", c["tongue"], "#a84a44", -2, -2, 3)
     elif m == "wobble":
-        line(S, "M-34,82 q8,-8 17,0 q8,8 17,0 q8,-8 17,0 q8,8 17,0", 4.5)
+        line(S, "M-34,90 q8,-8 17,0 q8,8 17,0 q8,-8 17,0 q8,8 17,0", 4.5)
     else:
-        cel(S, ell(0, 84, 20, 26), c["mouth"], c["mouth"], 0, 0, 4)
+        cel(S, ell(0, 90, 18, 24), c["mouth"], c["mouth"], 0, 0, 4)
     g_close(S)
 
 
@@ -333,7 +357,7 @@ def sheet(path_svg):
     S = SVG(Wd, Ht)
     S.add(f'<rect width="{Wd}" height="{Ht}" fill="{BG}"/>')
     text(S, 60, 84, "SHIRLEY &amp; GABBY", 64, 900)
-    text(S, 64, 122, "comic-style teen redesign · v1", 24, 500, "#5a4a3c")
+    text(S, 64, 122, "comic-style teen redesign · v2", 24, 500, "#5a4a3c")
     # panels
     halftone_bg(S, 40, 150, 1140, 1100, "#7fd0c8", "#4fa79f")
     halftone_bg(S, 1220, 150, 1140, 1100, "#ffd84d", "#f2a93b", burst=(1790, 640, 300, 560, "#ffe98a"))
