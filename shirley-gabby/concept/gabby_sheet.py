@@ -306,87 +306,202 @@ def body(S, x, y, s=1.0, lw=4):
 
 
 # ------------------------------------------------------------------ hands (wrist at origin, fingers point up = -y)
-def finger(S, x, y, ang, L, w, nail=False, creases=2, palm=False):
-    lit, dk = P["palm"] if palm else P["skin"]
-    g_open(S, x, y, 1, ang)
-    d = f"M{-w / 2},6 L{-w / 2},{-L + w / 2} A{w / 2},{w / 2} 0 0 1 {w / 2},{-L + w / 2} L{w / 2},6 Z"
-    cel(S, d, lit, dk, -4, -2, 3.5)
-    if nail:
-        nw, nh = w * 0.62, w * 0.62
-        fill(S, f"M{-nw / 2},{-L + w * 0.22 + nh} L{-nw / 2},{-L + w * 0.22 + nw / 2} A{nw / 2},{nw / 2} 0 0 1 {nw / 2},{-L + w * 0.22 + nw / 2} "
-                f"L{nw / 2},{-L + w * 0.22 + nh} Q0,{-L + w * 0.22 + nh + 3} {-nw / 2},{-L + w * 0.22 + nh} Z", P["nail"], lw=2)
-        line(S, f"M{-nw / 4},{-L + w * 0.22 + nw / 2} q{nw / 4},-3 {nw / 2},0", 1.4, "#ffffff", 0.7)
-    for k in range(creases):
-        yy = -L * (0.42 + 0.27 * k)
-        line(S, f"M{-w * 0.28},{yy} Q0,{yy + 3} {w * 0.28},{yy}", 2, INK, 0.55)
-    g_close(S)
+# Organic hands: one smooth silhouette per hand (Catmull-Rom through tapered, slightly bent fingers,
+# webbing valleys, fleshy thumb pad and palm heel), not separate tubes.
+def _smooth(pts, closed=True, t=1.0):
+    n = len(pts)
+    P_ = pts if closed else [pts[0]] + pts + [pts[-1]]
+    m = len(P_)
+    d = f"M{P_[0 if closed else 1][0]:.1f},{P_[0 if closed else 1][1]:.1f}"
+    rng = range(n) if closed else range(1, m - 2)
+    for i in rng:
+        p0, p1, p2, p3 = P_[(i - 1) % m], P_[i % m], P_[(i + 1) % m], P_[(i + 2) % m]
+        c1 = (p1[0] + (p2[0] - p0[0]) / 6 * t, p1[1] + (p2[1] - p0[1]) / 6 * t)
+        c2 = (p2[0] - (p3[0] - p1[0]) / 6 * t, p2[1] - (p3[1] - p1[1]) / 6 * t)
+        d += f" C{c1[0]:.1f},{c1[1]:.1f} {c2[0]:.1f},{c2[1]:.1f} {p2[0]:.1f},{p2[1]:.1f}"
+    return d + (" Z" if closed else "")
+
+
+def _digit(base, ang, L, w0, w1, bend=0.0, n=7, wf=1.0):
+    """tapered, gently bent finger: returns (left side base->tip, tip arc, right side tip->base, centreline)"""
+    cx, cy = base
+    cl, step = [], L / n
+    for k in range(n + 1):
+        t = k / n
+        cl.append((cx, cy, t))
+        a = math.radians(ang + bend * t)
+        cx, cy = cx + math.sin(a) * step, cy - math.cos(a) * step
+    left, right = [], []
+    for x, y, t in cl[:-1]:
+        a = math.radians(ang + bend * t)
+        nx, ny = math.cos(a), math.sin(a)
+        w = (w0 + (w1 - w0) * t) * wf * (1 + 0.05 * math.sin(math.pi * t * 2.6))  # slight knuckle swell
+        left.append((x - nx * w / 2, y - ny * w / 2))
+        right.append((x + nx * w / 2, y + ny * w / 2))
+    tx, ty, _ = cl[-1]
+    a = math.radians(ang + bend)
+    r = w1 * wf / 2
+    tip = []
+    for k in range(5):  # round fingertip
+        th = math.pi + math.pi * k / 4  # from left (-normal) over the top to right (+normal)
+        ux, uy = math.cos(th), math.sin(th)
+        # rotate (ux,uy) from local (normal, -dir) frame
+        nx, ny = math.cos(a), math.sin(a)
+        dx, dy = math.sin(a), -math.cos(a)
+        tip.append((tx - dx * r * 0.6 + nx * ux * r - dx * uy * r, ty - dy * r * 0.6 + ny * ux * r - dy * uy * r))
+    return left, tip, right[::-1], cl
+
+
+FINGERS_OPEN = [  # base (x,y), angle, length, base width, tip width, bend
+    ((-21, -50), -9, 54, 23, 18, 5), ((-2, -54), -2, 62, 24, 18.5, 3), ((16, -52), 6, 57, 23, 18, 1), ((32, -45), 15, 43, 19.5, 15.5, -2)]
+THUMB_OPEN = ((-31, -6), -58, 44, 25, 18, 22)
+
+
+def hand_outline(spread=1.0, wf=1.0, inset=0.0, curl=None):
+    """closed silhouette of an open hand (palm toward viewer, thumb on the left)"""
+    curl = curl or [0, 0, 0, 0]
+    pts = [(-21 + inset, 32), (-35 + inset, 12)]
+    tb, ta, tL, tw0, tw1, tbend = THUMB_OPEN
+    l, tip, r, _ = _digit(tb, ta * spread, tL * (1 - inset / 60), tw0, tw1, tbend, wf=wf)
+    pts += l[1:] + tip + r[:-1]
+    pts.append((-26 + inset * 0.5, -40 + inset * 0.3))  # thumb-index web
+    for i, ((bx, by), a, L, w0, w1, bend) in enumerate(FINGERS_OPEN):
+        l, tip, r, _ = _digit((bx, by), a * spread, L * (1 - curl[i]) - inset * 0.6, w0, w1, bend + 40 * curl[i], wf=wf)
+        pts += l + tip + r
+        if i < 3:  # webbing valley between fingers
+            nb = FINGERS_OPEN[i + 1][0]
+            pts.append(((bx + nb[0]) / 2, (by + nb[1]) / 2 + 2 + inset * 0.3))
+    pts += [(40 - inset, -22), (41 - inset, 4), (24 - inset, 32)]
+    return _smooth(pts)
 
 
 def sleeve(S, w=40):
     cel(S, f"M{-w},6 L{w},6 L{w - 4},34 L{-w + 4},34 Z", P["hood"][0], P["hood"][1], -4, -4, 4)
 
 
+def _creases(S, spread, op=0.5, back=False):
+    for (bx, by), a, L, w0, w1, bend in FINGERS_OPEN:
+        _, _, _, cl = _digit((bx, by), a * spread, L, w0, w1, bend)
+        for t in ((0.36, 0.64) if not back else (0.3, 0.58)):
+            x, y, _ = cl[int(t * (len(cl) - 1))]
+            aa = math.radians(a * spread + bend * t)
+            nx, ny = math.cos(aa), math.sin(aa)
+            w = (w0 + (w1 - w0) * t) * 0.32
+            if back:  # knuckle wrinkles: two tiny arcs
+                for o in (-2, 2):
+                    line(S, f"M{x - nx * w:.1f},{y - ny * w + o:.1f} Q{x:.1f},{y - 3 + o:.1f} {x + nx * w:.1f},{y + ny * w + o:.1f}", 1.6, INK, 0.4)
+            else:
+                line(S, f"M{x - nx * w:.1f},{y - ny * w:.1f} Q{x:.1f},{y + 2.5:.1f} {x + nx * w:.1f},{y + ny * w:.1f}", 1.8, INK, op)
+
+
+def _nails(S, spread):
+    digits = [d for d in FINGERS_OPEN]
+    for (bx, by), a, L, w0, w1, bend in digits:
+        _, _, _, cl = _digit((bx, by), a * spread, L, w0, w1, bend)
+        x, y, _ = cl[-2]
+        aa = math.degrees(math.radians(a * spread + bend))
+        S.add(f'<g transform="translate({x:.1f},{y:.1f}) rotate({aa:.1f})">'
+              f'<path d="M-5.5,6 C-6.5,-2 -4,-8 0,-8.5 C4,-8 6.5,-2 5.5,6 Q0,8 -5.5,6 Z" fill="{P["nail"]}" stroke="{INK}" stroke-width="1.8"/>'
+              f'<path d="M-2.5,-4 q2.5,-2 5,0" fill="none" stroke="#fff" stroke-width="1.3" opacity="0.7"/></g>')
+
+
 def hand_open(S, spread=1.0, palm_side=True):
-    fs = [(-23, -50, -10, 58, 20), (-7, -55, -2, 68, 21), (10, -53, 6, 63, 20), (25, -46, 15, 49, 17)]
-    for x, y, a, L, w in fs:
-        finger(S, x, y, a * spread, L, w, nail=not palm_side, palm=palm_side)
-    palm = "M-35,-56 C-40,-20 -34,14 -16,22 C4,30 28,24 35,4 C41,-20 40,-46 35,-56 Q0,-64 -35,-56 Z"
-    cel(S, palm, *(P["palm"] if palm_side else P["skin"]), -6, -6, 4)
+    outer = hand_outline(spread)
     if palm_side:
-        line(S, "M-28,-32 Q2,-42 31,-34", 2.2, INK, 0.45)
-        line(S, "M-32,-18 Q-6,-24 20,-10", 2.2, INK, 0.45)
-        line(S, "M-22,-40 Q-30,-4 -12,18", 2.2, INK, 0.45)
+        # darker back-of-hand skin shows around the edges, lighter palm inside
+        cid = cel(S, outer, P["skin"][0], P["skin"][1], -6, -5, 0, stroke=False)
+        inner = hand_outline(spread, wf=0.7, inset=5)
+        S.add(f'<g clip-path="url(#{cid})"><path d="{inner}" fill="{P["palm"][1]}"/>'
+              f'<path d="{inner}" fill="{P["palm"][0]}" transform="translate(-4,-4)"/></g>')
+        S.add(f'<path d="{outer}" fill="none" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>')
+        _creases(S, spread)
+        line(S, "M-20,-34 C-4,-42 18,-40 34,-30", 2.2, INK, 0.45)       # heart line
+        line(S, "M-26,-24 C-10,-26 6,-20 18,-10", 2.2, INK, 0.45)       # head line
+        line(S, "M-20,-38 C-30,-20 -26,6 -12,22", 2.2, INK, 0.45)       # life line (around the thumb pad)
+        line(S, "M2,22 C4,4 6,-10 6,-22", 1.6, INK, 0.25)               # faint fate line
+        line(S, "M-38,-14 q8,4 10,12", 1.8, INK, 0.4)                   # thumb joint crease
     else:
-        for x in (-16, 0, 16):
-            line(S, f"M{x},-44 L{x * 0.7},-6", 2, INK, 0.25)
-    finger(S, -32, -8, -58 * spread, 46, 22, nail=not palm_side, creases=1, palm=palm_side)
+        S.add('<g transform="scale(-1,1)">')
+        cel(S, outer, P["skin"][0], P["skin"][1], -6, -5, 4)
+        _creases(S, spread, back=True)
+        _nails(S, spread)
+        for x in (-14, 0, 14, 26):
+            line(S, f"M{x * 0.9},-34 C{x},-20 {x * 0.7},-4 {x * 0.5},12", 1.6, INK, 0.2)  # tendons
+        S.add("</g>")
+
+
+def _blob(pts):
+    return _smooth(pts, True, 1.0)
 
 
 def hand_point(S):
-    finger(S, -16, -48, -4, 74, 21, nail=True)
-    fist = "M-31,-50 C-32,-66 26,-68 31,-50 L33,4 C31,20 -31,20 -33,4 Z"
+    l, tip, r, cl = _digit((-14, -46), -3, 68, 23, 18, 4)
+    idx = _smooth([(-26, -30)] + l + tip + r + [(-2, -30)])
+    cel(S, idx, *P["skin"], -4, -4, 4)
+    x, y, _ = cl[-2]
+    S.add(f'<g transform="translate({x:.1f},{y:.1f}) rotate(1)"><path d="M-5.5,6 C-6.5,-2 -4,-8 0,-8.5 C4,-8 6.5,-2 5.5,6 Q0,8 -5.5,6 Z" '
+          f'fill="{P["nail"]}" stroke="{INK}" stroke-width="1.8"/></g>')
+    for t in (0.34, 0.6):
+        xx, yy, _ = cl[int(t * 7)]
+        line(S, f"M{xx - 5},{yy} q5,-3 10,0", 1.6, INK, 0.45)
+    fist = _blob([(-32, -40), (-24, -54), (-6, -56), (4, -60), (14, -56), (22, -58), (32, -50), (36, -28), (34, 4), (22, 26), (-20, 26), (-34, 6)])
     cel(S, fist, *P["skin"], -6, -6, 4)
-    line(S, "M-6,-58 q8,-9 16,0 q8,-9 16,0", 3)
-    for x in (2, 18):
-        line(S, f"M{x},-50 L{x},-32", 2, INK, 0.5)
-    for x in (-12, 4, 18):
-        line(S, f"M{x},-28 L{x * 0.8},0", 2, INK, 0.25)
-    finger(S, -32, -14, 84, 44, 20, nail=True, creases=1)
+    line(S, "M-4,-54 q4,8 0,16", 2, INK, 0.45)
+    line(S, "M12,-54 q4,8 0,16", 2, INK, 0.45)
+    line(S, "M-10,-26 C-6,-12 -8,2 -10,14", 1.6, INK, 0.2)
+    line(S, "M10,-26 C12,-12 10,2 8,14", 1.6, INK, 0.2)
+    l, tip, r, cl = _digit((-30, -10), 80, 40, 22, 17, 12)  # thumb tucked across the front
+    cel(S, _smooth([(-34, 2)] + l + tip + r + [(-30, -22)]), *P["skin"], -4, -4, 3.5)
+    x, y, _ = cl[-2]
+    S.add(f'<g transform="translate({x:.1f},{y:.1f}) rotate(92)"><path d="M-5,6 C-6,-2 -4,-8 0,-8 C4,-8 6,-2 5,6 Q0,8 -5,6 Z" '
+          f'fill="{P["nail"]}" stroke="{INK}" stroke-width="1.8"/></g>')
 
 
 def hand_thumbs(S):
-    palm = "M-26,-14 C-30,-50 -18,-70 6,-70 C28,-68 34,-44 30,-14 Z"
-    cel(S, palm, *P["skin"], -8, -6, 4)
-    for k in range(4):
-        yk = -62 + 13.5 * k
-        cel(S, f"M-42,{yk} C-49,{yk} -49,{yk + 13} -42,{yk + 13} L-4,{yk + 13} C2,{yk + 13} 2,{yk} -4,{yk} Z", *P["skin"], -4, -3, 3.5)
-        line(S, f"M-22,{yk + 3} L-22,{yk + 10}", 1.8, INK, 0.5)
-    finger(S, 10, -64, 4, 58, 24, nail=True, creases=1)
+    # side view: curled fingers as soft rolls of slightly different sizes, thumb up and bent back a little
+    l, tip, r, cl = _digit((10, -58), 2, 56, 25, 19, -14)
+    cel(S, _smooth([(0, -40)] + l + tip + r + [(26, -36)]), *P["skin"], -4, -4, 4)
+    x, y, _ = cl[-2]
+    S.add(f'<g transform="translate({x:.1f},{y:.1f}) rotate(-10)"><path d="M-6,6 C-7,-2 -4.5,-9 0,-9.5 C4.5,-9 7,-2 6,6 Q0,8.5 -6,6 Z" '
+          f'fill="{P["nail"]}" stroke="{INK}" stroke-width="1.8"/><path d="M-3,-5 q3,-2 6,0" fill="none" stroke="#fff" stroke-width="1.3" opacity="0.7"/></g>')
+    line(S, f"M{cl[3][0] - 7},{cl[3][1] + 2} q7,-4 14,0", 1.8, INK, 0.45)
+    back = _blob([(-16, -58), (8, -64), (28, -50), (32, -20), (28, 6), (8, 22), (-16, 20), (-24, -10)])
+    cel(S, back, *P["skin"], -6, -6, 4)
+    for k, (yy, ln) in enumerate(((-52, 36), (-36, 40), (-20, 38), (-5, 32))):  # curled finger rolls
+        roll = _blob([(-12, yy - 6), (-12 - ln * 0.5, yy - 7), (-12 - ln, yy - 2), (-14 - ln, yy + 6), (-12 - ln * 0.9, yy + 10),
+                      (-12 - ln * 0.4, yy + 10), (-12, yy + 9)])
+        cel(S, roll, *P["skin"], -3, -3, 3.5)
+        line(S, f"M{-12 - ln * 0.55},{yy - 4} q-3,6 0,12", 1.6, INK, 0.45)
 
 
 def hand_fist(S):
-    block = "M-40,-52 C-42,-66 40,-66 40,-52 L40,4 C38,20 -38,20 -40,4 Z"
+    block = _blob([(-38, -44), (-30, -60), (32, -60), (40, -44), (40, 2), (26, 24), (-26, 24), (-40, 2)])
     cel(S, block, *P["skin"], -6, -6, 4)
-    for i in range(4):
-        x0 = -40 + 20 * i
-        cel(S, f"M{x0 + 1},-30 L{x0 + 1},-54 Q{x0 + 10},-66 {x0 + 19},-54 L{x0 + 19},-30 Z", *P["skin"], -3, -3, 3)
-        line(S, f"M{x0 + 5},-42 Q{x0 + 10},-39 {x0 + 15},-42", 1.8, INK, 0.5)
-    finger(S, -38, -16, 92, 56, 21, nail=True, creases=1)
+    for i, h in enumerate((0, -4, -2, 4)):  # finger fronts, uneven
+        x0 = -36 + 19 * i
+        f = _blob([(x0, -26), (x0 - 1, -48 + h), (x0 + 9, -60 + h), (x0 + 19, -48 + h), (x0 + 18, -26), (x0 + 9, -22)])
+        cel(S, f, *P["skin"], -3, -3, 3)
+        line(S, f"M{x0 + 4},{-42 + h} q5,3 10,0", 1.6, INK, 0.45)
+    l, tip, r, cl = _digit((-34, -14), 88, 52, 22, 17, 10)
+    cel(S, _smooth([(-40, -2)] + l + tip + r + [(-36, -26)]), *P["skin"], -4, -4, 3.5)
+    x, y, _ = cl[-2]
+    S.add(f'<g transform="translate({x:.1f},{y:.1f}) rotate(96)"><path d="M-5,6 C-6,-2 -4,-8 0,-8 C4,-8 6,-2 5,6 Q0,8 -5,6 Z" '
+          f'fill="{P["nail"]}" stroke="{INK}" stroke-width="1.8"/></g>')
 
 
 def hand_kya(S):
-    """the 'kya?!' gesture: hand up, palm turned up, fingers loosely spread, twisting"""
-    g_open(S, 4, -12, 1, -16)
-    hand_open(S, spread=1.25, palm_side=True)
+    """the 'kya?!' gesture: hand up, palm turned up and out, fingers loosely spread and curved, twisting"""
+    g_open(S, 4, -10, 1, -16)
+    hand_open(S, spread=1.3, palm_side=True)
     g_close(S)
-    line(S, "M-70,-96 Q-40,-128 -2,-120", 3, "#5a4a3c", 0.8)
-    line(S, "M-8,-128 l8,8 l-10,4", 3, "#5a4a3c", 0.8)
-    line(S, "M58,-70 Q76,-40 64,-14", 3, "#5a4a3c", 0.8)
+    line(S, "M-58,-106 Q-24,-132 12,-118", 3, "#5a4a3c", 0.8)
+    line(S, "M4,-126 l9,8 l-11,4", 3, "#5a4a3c", 0.8)
+    line(S, "M62,-70 Q78,-40 66,-14", 3, "#5a4a3c", 0.8)
 
 
-HAND_POSES = [("open", "open palm", lambda S: hand_open(S)), ("back", "back of hand", lambda S: hand_open(S, 0.8, False)),
+HAND_POSES = [("open", "open palm", lambda S: hand_open(S)), ("back", "back of hand", lambda S: hand_open(S, 0.85, False)),
               ("point", "pointing", hand_point), ("thumbs", "thumbs up", hand_thumbs), ("fist", "fist", hand_fist),
-              ("kya", "\u201ckya?!\u201d gesture", hand_kya)]
+              ("kya", "“kya?!” gesture", hand_kya)]
 
 
 # ------------------------------------------------------------------ sheet
