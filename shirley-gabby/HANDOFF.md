@@ -42,5 +42,16 @@ Today it's a **toolkit, not a general engine**: every scene is a hand-timed scri
 3. Set kit, action library, props, more views, creature templates, Rhubarb lip-sync.
 4. Optional: owner/friends record real voice lines.
 
+## 7a. Blender feasibility test: DONE (2026-11-05)
+- **Setup that works:** Blender 5.2.3 LTS + the official **Blender Lab MCP add-on** (v1.0.3, Edit > Preferences > Add-ons > MCP; localhost:9876, Auto Start on). The connector talks to the *open* Blender window. Headless mode (`execute_blender_code_for_cli`) still can't find `blender.exe`: the connector ignores the Windows `BLENDER_PATH` user variable, even after a restart. Live Blender is enough, so this was left alone.
+- **Outputs go to `C:\Users\USER\ShirleyGabby\blender_test`.** Windows Controlled Folder Access blocks Blender from writing into Documents. Claude has folder access to `C:\Users\USER\ShirleyGabby`.
+- **Live-session rules (`blender_test.py`):** never `read_factory_settings` (it would switch off the MCP add-on and cut the connection). Build in new scenes (`SG_flat2d`, `SG_toon3d`) with the data API and bmesh, not context operators. Render with `bpy.ops.render.render(..., scene=name)`. Calls over ~60 s time out on the bridge but keep running, so poll for the output file. `run()` is stashed in `bpy.app.driver_namespace["sg_run"]` so later calls are one line. Blender 5.x video needs `image_settings.media_type = "VIDEO"` before `file_format = "FFMPEG"`. Colours must be converted sRGB to linear.
+- **Results (Gabby from primitives, 1920x1080 EEVEE):**
+  - Flat 2D: ortho camera, emission colours, Grease Pencil **Line Art** ink (works via `bpy.data.grease_pencils` + LINEART modifier). Still about 3–4 s; 24-frame clip 33 s (**1.4 s/frame**).
+  - Toon 3D: 3/4 camera, two-tone cel shading (Diffuse > Shader to RGB > constant ramp), inverted-hull ink, sun shadow. Still about 2–8 s; 24-frame clip 35 s (**1.5 s/frame**).
+  - The very first render took 64 s (one-time shader compile).
+- **Verdict so far:** Blender is viable and fast enough (11-min episode ≈ 15.8k frames ≈ 6–7 h per pass on this PC). Both looks work; toon 3D gives free camera angles, shadows and props. Gabby's model is crude primitives: stubble reads as a beard; arms and hands have no rig yet.
+- **Next:** owner picks flat 2D vs toon 3D (or 3D with the Line Art ink). Then a proper Gabby model with an armature (rig), Shirley, and a port of the pose-to-pose `acting.py` timing onto Blender keyframes (constant interpolation on twos).
+
 ## 8. Ideas parked for later
 Recurring extras: the landlord in disguises, a sentient router that knows too much, Mum on video call. Alternate dynamics considered: an Inside Job flip (Shirley works inside a tech giant) or Shirley as a reckless genius inventor. The chosen dynamic is gullible Gabby causing trouble and Shirley the reluctant brave one, in pure-fiction weird worlds.
