@@ -5,6 +5,7 @@ Original character design for Shirley & Gabby: Gabby, 22, Indian, loud/optimisti
 import math, os, sys
 
 INK = "#1b1418"
+HALFTONE = False  # comic halftone shadows (set True by the teen comic sheet)
 P = dict(  # palette: (lit, shadow)
     skin=("#9a6443", "#6e4430"), skin_hi="#b07a55", hair=("#1d1517", "#120c0e"), stub="#3a2419",
     beanie=("#269696", "#1b7070"), cuff=("#1e8080", "#155c5c"), pom=("#2aa4a4", "#1b7474"),
@@ -43,7 +44,15 @@ def cel(S, d, lit, dark, dx=-14, dy=-10, lw=4, stroke=True, extra=""):
     """flat 2-tone cel: shadow everywhere, lit copy shifted toward the light, clipped to the shape, ink outline"""
     cid = S.uid()
     S.defs.append(f'<clipPath id="{cid}"><path d="{d}"/></clipPath>')
-    S.add(f'<path d="{d}" fill="{dark}"/>')
+    if HALFTONE:  # comic look: lit colour everywhere, shadow side printed as halftone dots
+        pid = "ht" + dark.lstrip("#")
+        if pid not in getattr(S, "pats", set()):
+            S.pats = getattr(S, "pats", set()) | {pid}
+            S.defs.append(f'<pattern id="{pid}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">'
+                          f'<circle cx="3.5" cy="3.5" r="2.5" fill="{dark}"/></pattern>')
+        S.add(f'<path d="{d}" fill="{lit}"/><path d="{d}" fill="url(#{pid})"/>')
+    else:
+        S.add(f'<path d="{d}" fill="{dark}"/>')
     S.add(f'<g clip-path="url(#{cid})"><path d="{d}" fill="{lit}" transform="translate({dx},{dy})"/>{extra}</g>')
     if stroke:
         S.add(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="{lw}" stroke-linejoin="round" stroke-linecap="round"/>')
