@@ -53,5 +53,32 @@ Today it's a **toolkit, not a general engine**: every scene is a hand-timed scri
 - **Verdict so far:** Blender is viable and fast enough (11-min episode ≈ 15.8k frames ≈ 6–7 h per pass on this PC). Both looks work; toon 3D gives free camera angles, shadows and props. Gabby's model is crude primitives: stubble reads as a beard; arms and hands have no rig yet.
 - **Next:** owner picks flat 2D vs toon 3D (or 3D with the Line Art ink). Then a proper Gabby model with an armature (rig), Shirley, and a port of the pose-to-pose `acting.py` timing onto Blender keyframes (constant interpolation on twos).
 
+## 7b. DECISION: toon 3D in Blender (2026-11-05)
+The owner chose **toon 3D** (after seeing both tests and asking how Rick and Morty looks: R&M is flat 2D, which a 3D character can also imitate later with Line Art, flat colour and an ortho camera).
+- **Engine:** `blender/sg3d.py` (on the PC at `C:\Users\USER\ShirleyGabby\engine\sg3d.py`, renders go to `...\ShirleyGabby\renders`). Load it in live Blender:
+  `ns={}; exec(open(p).read(), ns); bpy.app.driver_namespace["sg3d"]=ns`, then `ns["demo_turnaround"]()`, `ns["demo_line"]()`, `ns["demo_line_clip"]()`.
+- **What's in it:**
+  - Cel shader (two tones; base colour can be a texture) and an inverted-hull ink line. Mesh scale is baked into the vertices so the line is the same width everywhere.
+  - Mesh generators: ellipsoid, capsule, torus, box.
+  - `Rig`: an FK puppet rig of empties with meshes hung on joints.
+  - `build_gabby`: jowly head, stubble texture (front of the jaw only), cuffed beanie and pom-pom, hoodie with hood, strings, pocket and hem, 2-part arms, cartoon hands (3 fingers + thumb, shapes relax/open/fist/point/tuck), jeans and sneakers. Face channels: brows (raise and angle), blink, pupils look, mouth open/smile.
+  - `POSES3` + `Acting3D`: acting.py's pose-to-pose ported (anticipation, overshoot, settle, moving holds, squash and stretch, on twos, constant keys), plus placeholder mouth flaps and blinks.
+  - `build_laundromat`: tiled floor, wall, washers, glowing-green dryer.
+- **Gotchas found:**
+  - Blender only evaluates animation for the scene shown in the window. `render_still`/`render_clip` switch the window to the scene and back (`on_screen`).
+  - Python keyframe inserts ignore the interpolation preference, so keys are set to CONSTANT on the fcurves (Blender 5 channelbags, see `fcurves()`).
+  - Two scenes building "Gabby" get `.001` names.
+  - `device_commit_files` silently doesn't overwrite an existing file on the PC: commit under a new name and `cp` it over with device_bash, then check the md5.
+  - Clips longer than ~60 s of rendering time out on the bridge but keep going, so poll the output file.
+- **Speed:** about 1.3–2.3 s per 1080p still once shaders are compiled (the first render of a session takes 10–60 s).
+- **Next:**
+  - Shirley (tall head, bun with pencil, round glasses, earrings, mustard blouse, plum trousers, half-lidded eyes).
+  - Real voices plus lip-sync from audio (the visemes from toon.py / Rhubarb drive the `mouth` channel).
+  - Secondary motion (pom-pom, strings, bun and pencil springs).
+  - Walk cycle.
+  - Shot/reverse-shot camera.
+  - The scene-script format (step 7.2).
+  - Shoes render greyish (cel shadow on white): lift the shoe colour or lower its shade.
+
 ## 8. Ideas parked for later
 Recurring extras: the landlord in disguises, a sentient router that knows too much, Mum on video call. Alternate dynamics considered: an Inside Job flip (Shirley works inside a tech giant) or Shirley as a reckless genius inventor. The chosen dynamic is gullible Gabby causing trouble and Shirley the reluctant brave one, in pure-fiction weird worlds.
