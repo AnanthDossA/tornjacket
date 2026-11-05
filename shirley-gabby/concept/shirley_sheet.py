@@ -16,8 +16,9 @@ Q = dict(
     blush="#c4505c", pencil=("#f2c94c", "#c99a24"), eraser="#e98a9a", wood="#e9c9a0")
 
 # ------------------------------------------------------------------ head (origin = face centre)
-HEAD = ("M-78,-112 C-84,-172 84,-172 78,-112 C90,-52 90,18 74,68 C60,110 32,132 0,134 "
-        "C-32,132 -60,110 -74,68 C-90,18 -90,-52 -78,-112 Z")
+# softer, rounder face (owner didn't like the long one): fuller cheeks, short gentle heart-shaped jaw
+HEAD = ("M-86,-104 C-92,-160 92,-160 86,-104 C98,-50 100,6 88,48 C74,92 40,114 0,116 "
+        "C-40,114 -74,92 -88,48 C-100,6 -98,-50 -86,-104 Z")
 
 EXPR = {  # brow raise per side (L = screen left), brow angle, lid, look, mouth, glare
     "deadpan": dict(bl=0, br=0, ang=0, lid=0.46, look=(0, 2), mouth="flat"),
@@ -128,23 +129,22 @@ def head(S, x, y, s=1.0, expr="deadpan", lw=4):
     for d in ("M-26,-196 C-20,-232 36,-238 46,-206", "M-14,-180 C-6,-212 34,-214 36,-188", "M-30,-172 C10,-150 50,-160 58,-186"):
         line(S, d, 3, Q["hi"], 0.9)
     # back hair (nape) + ears with mini jhumkas
-    fill(S, "M-92,-90 C-100,-176 100,-176 92,-90 C96,-40 92,0 84,20 L-84,20 C-92,0 -96,-40 -92,-90 Z", Q["hair"][1], lw=lw)
+    fill(S, "M-98,-90 C-106,-172 106,-172 98,-90 C102,-40 98,0 90,20 L-90,20 C-98,0 -102,-40 -98,-90 Z", Q["hair"][1], lw=lw)
     for sx in (-1, 1):
-        cel(S, ell(82 * sx, -2, 13, 22), sk, sd, -4 * sx, -3, lw)
-        jhumka(S, 82 * sx, 18)
+        cel(S, ell(90 * sx, -2, 13, 22), sk, sd, -4 * sx, -3, lw)
+        jhumka(S, 90 * sx, 18)
     hc = cel(S, HEAD, sk, sd, -14, -10, lw)
     S.add(f'<g clip-path="url(#{hc})">'
-          f'<path d="{ell(-50, 30, 22, 12)}" fill="{Q["blush"]}" opacity="0.22"/><path d="{ell(50, 30, 22, 12)}" fill="{Q["blush"]}" opacity="0.22"/>'
+          f'<path d="{ell(-54, 32, 24, 13)}" fill="{Q["blush"]}" opacity="0.24"/><path d="{ell(54, 32, 24, 13)}" fill="{Q["blush"]}" opacity="0.24"/>'
           f'<path d="M-80,-110 L80,-110 L80,-92 Q0,-80 -80,-92 Z" fill="{sd}" opacity="0.5"/></g>')
-    line(S, "M-66,6 Q-58,22 -50,30", 1.8, INK, 0.3)  # cheekbones
-    line(S, "M66,6 Q58,22 50,30", 1.8, INK, 0.3)
+
     # sleek front hair, middle part slightly off-centre, face-framing strands
     for sx in (-1, 1):
         px = 8
-        d = (f"M{px},-160 C{px + sx * 50},-164 {88 * sx},-134 {90 * sx},-72 C{92 * sx},-30 {90 * sx},10 {80 * sx},46 "
-             f"C{76 * sx},12 {74 * sx},-28 {70 * sx},-64 C{62 * sx},-104 {px + sx * 32},-122 {px},-124 Z")
+        d = (f"M{px},-156 C{px + sx * 54},-160 {96 * sx},-130 {98 * sx},-70 C{100 * sx},-30 {98 * sx},6 {88 * sx},38 "
+             f"C{84 * sx},6 {82 * sx},-28 {78 * sx},-62 C{70 * sx},-100 {px + sx * 34},-116 {px},-118 Z")
         cel(S, d, Q["hair"][0], Q["hair"][1], -6 * sx, -6, lw)
-        line(S, f"M{px + sx * 20},-150 C{56 * sx},-140 {78 * sx},-110 {80 * sx},-70", 2.5, Q["hi"], 0.8)
+        line(S, f"M{px + sx * 20},-146 C{60 * sx},-136 {84 * sx},-108 {88 * sx},-70", 2.5, Q["hi"], 0.8)
     # face
     for sx in (-1, 1):
         eye(S, sx, e)
@@ -295,7 +295,7 @@ def sheet(path_svg):
     for gy in range(0, H, 40):
         S.add(f'<line x1="0" y1="{gy}" x2="{W}" y2="{gy}" stroke="#e2d6c9" stroke-width="1"/>')
     text(S, 60, 86, "SHIRLEY", 64, 800)
-    text(S, 64, 126, "Shirley &amp; Gabby · character sheet · concept v1", 24, 400, "#5a4a3c")
+    text(S, 64, 126, "Shirley &amp; Gabby · character sheet · concept v2", 24, 400, "#5a4a3c")
     hx, hy, hs = 640, 430, 1.1
     body(S, hx, hy, hs)
     head(S, hx, hy, hs, "deadpan")
@@ -308,7 +308,7 @@ def sheet(path_svg):
     for i, (k, lab) in enumerate(ex):
         cx, cy = x0 + (i % 3) * 330, y0 + (i // 3) * 440
         head(S, cx, cy, 0.8, k)
-        text(S, cx, cy + 150, lab, 24, 700, "#5a4a3c", "middle")
+        text(S, cx, cy + 140, lab, 24, 700, "#5a4a3c", "middle")
     # palette
     px, py = 2150, 260
     text(S, px - 30, py - 40, "PALETTE", 30, 800)
@@ -323,7 +323,7 @@ def sheet(path_svg):
     notes = [
         "~29, Indian. Gabby's elder sister. Sharp, deadpan, permanently tired; secretly the bravest.",
         "Modern and science-minded: questions everything, tablet full of graphs, smartwatch.",
-        "Tall face, high bun with a pencil through it, sleek face-framing strands, burgundy sheen.",
+        "Soft round face, high bun with a pencil through it, sleek face-framing strands, burgundy sheen.",
         "Makeup: winged liner, groomed arched brows, berry lips, soft blush, berry nail polish.",
         "Round gold-rim glasses (pushes them up at the rim when she's about to be right).",
         "Small bindi, gold nose pin, mini gold jhumkas, benzene-ring pendant.",
