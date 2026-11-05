@@ -96,5 +96,21 @@ The owner chose **toon 3D** (after seeing both tests and asking how Rick and Mor
   - The scene-script format (step 7.2).
   - Shoes render greyish (cel shadow on white): lift the shoe colour or lower its shade.
 
+## 7c. PIPELINE DECISION (owner, 2026-11-06): all production in 3D Blender, rendered to a 2D comic look
+- `blender/teen3d.py` builds the FINAL teens in 3D.
+  - Heads, hair and hoodies are lathed from the sheet's front-silhouette widths (`concept/assets3d/profiles.json`, made by `concept/export_3d_assets.py`).
+  - Faces are the sheet's own comic art as decals, one per expression.
+  - The halftone comic shader puts dots only on the shadow side (light from the upper left). The ink hull must not cast shadows (Light Path "Is Shadow Ray" goes to transparent), and hair has `visible_shadow` off.
+  - `demo_turnaround()` and `demo_shots()` (wide, low-angle and over-the-shoulder cameras) work. Renders take about 1.5–3 s per 1080p frame.
+- **Owner feedback on that build:** it looks like a toy (stiff puppet parts, flat painted eyes).
+- **Agreed next:**
+  - A real skeleton (recommended: Rigify, free and built into Blender; the owner must enable it under Preferences > Add-ons).
+  - One continuous, higher-poly body mesh per character with edge loops at the joints, auto-weighted, with clothes as separate fitted meshes.
+  - Real 3D eyeballs with moving irises, eyelids for blinks and squints, movable brows.
+  - Mouth shapes swapped from the approved drawn mouths, for lip-sync.
+  - Proper finger bones.
+  - Do Gabby first, then Shirley. The locked designs must not change.
+- PC file transfer: `device_commit_files` will not overwrite an existing file, so commit to a new name and `cp` it over (check the md5).
+
 ## 8. Ideas parked for later
 Recurring extras: the landlord in disguises, a sentient router that knows too much, Mum on video call. Alternate dynamics considered: an Inside Job flip (Shirley works inside a tech giant) or Shirley as a reckless genius inventor. The chosen dynamic is gullible Gabby causing trouble and Shirley the reluctant brave one, in pure-fiction weird worlds.
